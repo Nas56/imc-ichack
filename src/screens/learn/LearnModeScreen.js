@@ -16,6 +16,8 @@ import { db } from '../../../firebaseConfig';
 import { transcribeAudio } from '../../services/deepgramService';
 import { calculateXP, addXP, getLevelInfo } from '../../services/levelingService';
 import { generatePassage } from '../../services/passageGenerationService';
+import { generateLearnModeFeedback } from '../../services/claudeService';
+import { speakWords } from '../../services/elevenLabsService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
 import passagesData from '../../data/passages.json';
 
@@ -32,6 +34,9 @@ const LearnModeScreen = ({ onBack, user }) => {
   const [hasFinished, setHasFinished] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
+  const [aiFeedback, setAiFeedback] = useState('');
+  const [incorrectWords, setIncorrectWords] = useState([]);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   const recordingRef = useRef(null);
   const audioPermissionRef = useRef(false);
@@ -183,6 +188,12 @@ const LearnModeScreen = ({ onBack, user }) => {
 
     setScore(percentage);
 
+    // Get incorrect words for AI feedback and pronunciation help
+    const incorrect = states
+      .filter(state => !state.isCorrect)
+      .map(state => state.word);
+    setIncorrectWords(incorrect);
+
     // Calculate XP earned
     const xp = calculateXP(difficulty, percentage);
     setEarnedXP(xp);
@@ -193,6 +204,15 @@ const LearnModeScreen = ({ onBack, user }) => {
     }
 
     setHasFinished(true);
+
+    // Generate AI feedback
+    try {
+      const feedback = await generateLearnModeFeedback(percentage, incorrect);
+      setAiFeedback(feedback);
+    } catch (error) {
+      console.error('Failed to generate AI feedback:', error);
+      setAiFeedback('Great effort! Keep practicing to improve your reading skills.');
+    }
   };
 
   const updateUserXP = async (xp) => {
@@ -420,6 +440,44 @@ const LearnModeScreen = ({ onBack, user }) => {
             <View style={styles.xpContainer}>
               <Text style={styles.xpText}>+{earnedXP} xp</Text>
             </View>
+
+            {/* AI Feedback */}
+            {aiFeedback && (
+              <View style={styles.feedbackContainer}>
+                <View style={styles.feedbackHeader}>
+                  <Ionicons name="bulb" size={20} color={colors.secondary} />
+                  <Text style={styles.feedbackTitle}>ai coach says:</Text>
+                </View>
+                <Text style={styles.feedbackText}>{aiFeedback}</Text>
+              </View>
+            )}
+
+            {/* Pronunciation Help */}
+            {incorrectWords.length > 0 && (
+              <TouchableOpacity
+                style={styles.pronunciationButton}
+                onPress={async () => {
+                  setIsPlayingAudio(true);
+                  try {
+                    await speakWords(incorrectWords);
+                  } catch (error) {
+                    Alert.alert('error', 'failed to play pronunciation audio');
+                  }
+                  setIsPlayingAudio(false);
+                }}
+                disabled={isPlayingAudio}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={isPlayingAudio ? "volume-high" : "volume-medium"}
+                  size={20}
+                  color="#fff"
+                />
+                <Text style={styles.pronunciationButtonText}>
+                  {isPlayingAudio ? 'playing...' : 'hear missed words'}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -747,6 +805,50 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: fontWeight.extraBold,
     color: colors.accentForeground,
+    textTransform: 'lowercase',
+  },
+  feedbackContainer: {
+    backgroundColor: colors.muted,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.secondary,
+  },
+  feedbackHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  feedbackTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    marginLeft: spacing.xs,
+    textTransform: 'lowercase',
+  },
+  feedbackText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.regular,
+    color: colors.mutedForeground,
+    lineHeight: 22,
+  },
+  pronunciationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+  },
+  pronunciationButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.secondaryForeground,
+    marginLeft: spacing.sm,
     textTransform: 'lowercase',
   },
   buttonRow: {
