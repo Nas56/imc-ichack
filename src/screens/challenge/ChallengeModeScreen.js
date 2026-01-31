@@ -7,48 +7,25 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Modal,
+  SafeAreaView,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import { ref, update, get } from 'firebase/database';
-import { db } from '../../../firebaseConfig';
 import { transcribeAudio } from '../../services/deepgramService';
-import { generatePassage } from '../../services/passageGenerationService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
-import passagesData from '../../data/passages.json';
 
-// Target WPM for each difficulty
-const TARGET_WPM = {
-  easy: 90,
-  medium: 110,
-  hard: 130,
-};
+// Challenge text - slightly longer and more complex
+const CHALLENGE_TEXT = "The ancient library stood tall against the evening sky, its weathered stone walls holding countless stories within. Scholars from distant lands traveled for months to access its vast collection of manuscripts and scrolls. Each book was a treasure, carefully preserved by generations of dedicated librarians who understood the immense value of knowledge.";
 
-// Rank thresholds
-const RANKS = {
-  bronze: { min: 0, max: 49, emoji: '🥉', color: '#CD7F32', name: 'Bronze' },
-  silver: { min: 50, max: 69, emoji: '🥈', color: '#C0C0C0', name: 'Silver' },
-  gold: { min: 70, max: 100, emoji: '🥇', color: '#FFD700', name: 'Gold' },
-};
-
-const ChallengeModeScreen = ({ onBack, user }) => {
-  const [difficulty, setDifficulty] = useState(null);
-  const [currentPassage, setCurrentPassage] = useState(null);
+const ChallengeModeScreen = ({ onBack }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [wordStates, setWordStates] = useState([]);
-  const [accuracyScore, setAccuracyScore] = useState(null);
+  const [score, setScore] = useState(null);
   const [wpm, setWpm] = useState(null);
-  const [totalScore, setTotalScore] = useState(null);
-  const [rank, setRank] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [hasFinished, setHasFinished] = useState(false);
-  const [showRankModal, setShowRankModal] = useState(false);
-  const [isNewHighScore, setIsNewHighScore] = useState(false);
-  const [highScores, setHighScores] = useState({ easy: 0, medium: 0, hard: 0 });
 
   const recordingRef = useRef(null);
   const audioPermissionRef = useRef(false);
@@ -57,8 +34,8 @@ const ChallengeModeScreen = ({ onBack, user }) => {
 
   useEffect(() => {
     requestAudioPermission();
-    loadHighScores();
     return () => {
+      // Cleanup on unmount
       if (recordingRef.current) {
         stopRecording();
       }
@@ -83,48 +60,6 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     }
   };
 
-  const loadHighScores = async () => {
-    if (!user) return;
-    try {
-      const userRef = ref(db, 'users/' + user.uid);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-      if (userData?.challengeHighScores) {
-        setHighScores(userData.challengeHighScores);
-      }
-    } catch (error) {
-      console.error('Error loading high scores:', error);
-    }
-  };
-
-  const selectDifficulty = (selectedDifficulty) => {
-    setDifficulty(selectedDifficulty);
-    loadChallengePassage(selectedDifficulty);
-  };
-
-  const loadChallengePassage = async (diff) => {
-    setIsGenerating(true);
-    resetSession();
-
-    try {
-      console.log(`Generating ${diff} challenge passage...`);
-      const generatedPassage = await generatePassage(diff);
-      setCurrentPassage(generatedPassage);
-      console.log('✅ Challenge passage generated');
-    } catch (error) {
-      console.error('Failed to generate challenge passage:', error);
-      console.log('Falling back to local passages...');
-
-      const passages = passagesData[diff];
-      if (passages && passages.length > 0) {
-        const randomIndex = Math.floor(Math.random() * passages.length);
-        setCurrentPassage(passages[randomIndex]);
-      }
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const startRecording = async () => {
     try {
       if (!audioPermissionRef.current) {
@@ -132,11 +67,13 @@ const ChallengeModeScreen = ({ onBack, user }) => {
         if (!audioPermissionRef.current) return;
       }
 
+      // Configure audio mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
 
+      // Start recording
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
@@ -145,10 +82,8 @@ const ChallengeModeScreen = ({ onBack, user }) => {
       setIsRecording(true);
       setTranscribedText('');
       setWordStates([]);
-      setAccuracyScore(null);
+      setScore(null);
       setWpm(null);
-      setTotalScore(null);
-      setRank(null);
       setHasFinished(false);
 
       // Start timer
@@ -156,7 +91,7 @@ const ChallengeModeScreen = ({ onBack, user }) => {
       setElapsedTime(0);
       timerRef.current = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000));
-      }, 100);
+      }, 1000);
     } catch (error) {
       console.error('Failed to start recording:', error);
       Alert.alert('Error', 'Failed to start recording. Please try again.');
@@ -167,28 +102,34 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     try {
       if (!recordingRef.current) return;
 
-      setIsRecording(false);
+      // Stop timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
 
-      const endTime = Date.now();
-      const duration = (endTime - startTimeRef.current) / 1000; // seconds
+      const finalTime = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      setElapsedTime(finalTime);
 
+      setIsRecording(false);
       setIsProcessing(true);
 
       await recordingRef.current.stopAndUnloadAsync();
       const uri = recordingRef.current.getURI();
       recordingRef.current = null;
 
+      // Reset audio mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
       });
 
       if (uri) {
+        // Transcribe the audio
         const transcript = await transcribeAudio(uri);
         setTranscribedText(transcript);
-        analyzePerformance(transcript, duration);
+
+        // Compare with the extract and calculate metrics
+        compareTexts(transcript, finalTime);
       }
 
       setIsProcessing(false);
@@ -199,23 +140,22 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     }
   };
 
-  const analyzePerformance = async (transcript, duration) => {
-    if (!currentPassage) return;
-
+  const compareTexts = (transcript, timeInSeconds) => {
+    // Normalize texts
     const normalizeText = (text) =>
       text.toLowerCase()
         .replace(/[.,!?;:]/g, '')
         .split(/\s+/)
         .filter(word => word.length > 0);
 
-    const extractWords = normalizeText(currentPassage.text);
+    const challengeWords = normalizeText(CHALLENGE_TEXT);
     const transcriptWords = normalizeText(transcript);
 
-    // Calculate word states
-    const states = extractWords.map((word, index) => {
+    // Create word states with comparison
+    const states = challengeWords.map((word, index) => {
       const wasSpoken = transcriptWords.includes(word);
       return {
-        word: currentPassage.text.split(/\s+/)[index],
+        word: CHALLENGE_TEXT.split(/\s+/)[index],
         isCorrect: wasSpoken,
         index,
       };
@@ -223,100 +163,44 @@ const ChallengeModeScreen = ({ onBack, user }) => {
 
     setWordStates(states);
 
-    // Calculate accuracy
+    // Calculate accuracy score
     const correctWords = states.filter(state => state.isCorrect).length;
     const totalWords = states.length;
-    const accuracy = Math.round((correctWords / totalWords) * 100);
-    setAccuracyScore(accuracy);
+    const percentage = Math.round((correctWords / totalWords) * 100);
 
-    // Calculate WPM
-    const wordsPerMinute = Math.round((transcriptWords.length / duration) * 60);
+    // Calculate WPM (Words Per Minute)
+    const minutes = timeInSeconds / 60;
+    const wordsPerMinute = Math.round(correctWords / minutes);
+
+    setScore(percentage);
     setWpm(wordsPerMinute);
-
-    // Calculate composite score
-    const score = calculateChallengeScore(accuracy, wordsPerMinute, difficulty);
-    setTotalScore(score);
-
-    // Determine rank
-    const achievedRank = getRankFromScore(score);
-    setRank(achievedRank);
-
-    // Check for new high score
-    const currentHighScore = highScores[difficulty] || 0;
-    const isNewHigh = score > currentHighScore;
-    setIsNewHighScore(isNewHigh);
-
-    // Update high score in Firebase
-    if (isNewHigh && user) {
-      await updateHighScore(difficulty, score);
-    }
-
     setHasFinished(true);
-    setShowRankModal(true);
-  };
-
-  const calculateChallengeScore = (accuracy, wpm, diff) => {
-    // Accuracy component (0-50 points)
-    const accuracyPoints = (accuracy / 100) * 50;
-
-    // WPM component (0-50 points)
-    const targetWpm = TARGET_WPM[diff];
-    const wpmRatio = Math.min(wpm / targetWpm, 2); // Cap at 2x target
-    const wpmPoints = wpmRatio * 25; // Max 50 points if reading at 2x target
-
-    const total = Math.round(accuracyPoints + wpmPoints);
-    return Math.min(total, 100); // Cap at 100
-  };
-
-  const getRankFromScore = (score) => {
-    if (score >= RANKS.gold.min && score <= RANKS.gold.max) return RANKS.gold;
-    if (score >= RANKS.silver.min && score <= RANKS.silver.max) return RANKS.silver;
-    return RANKS.bronze;
-  };
-
-  const updateHighScore = async (diff, score) => {
-    if (!user) return;
-    try {
-      const userRef = ref(db, 'users/' + user.uid);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-
-      const currentHighScores = userData?.challengeHighScores || { easy: 0, medium: 0, hard: 0 };
-      currentHighScores[diff] = score;
-
-      await update(userRef, {
-        challengeHighScores: currentHighScores,
-      });
-
-      setHighScores(currentHighScores);
-    } catch (error) {
-      console.error('Error updating high score:', error);
-    }
   };
 
   const resetSession = () => {
     setTranscribedText('');
     setWordStates([]);
-    setAccuracyScore(null);
+    setScore(null);
     setWpm(null);
-    setTotalScore(null);
-    setRank(null);
     setElapsedTime(0);
     setHasFinished(false);
     setIsRecording(false);
     setIsProcessing(false);
-    setIsNewHighScore(false);
     if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
   };
 
-  const tryNewChallenge = () => {
-    loadChallengePassage(difficulty);
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const renderWord = (wordState, index) => {
     const { word, isCorrect } = wordState;
+
     return (
       <Text
         key={index}
@@ -330,244 +214,164 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     );
   };
 
-  // Difficulty Selection Screen
-  if (!difficulty) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Challenge Mode</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.difficultyContainer}
-        >
-          <Text style={styles.challengeTitle}>⚔️ Test Your Skills!</Text>
-          <Text style={styles.challengeSubtitle}>
-            Read as fast AND accurately as you can.{'\n'}
-            Earn ranks based on your performance!
-          </Text>
-
-          <View style={styles.rankLegend}>
-            <Text style={styles.legendTitle}>Ranks:</Text>
-            <View style={styles.rankRow}>
-              <Text style={styles.rankEmoji}>🥉</Text>
-              <Text style={styles.rankText}>Bronze (0-49)</Text>
-            </View>
-            <View style={styles.rankRow}>
-              <Text style={styles.rankEmoji}>🥈</Text>
-              <Text style={styles.rankText}>Silver (50-69)</Text>
-            </View>
-            <View style={styles.rankRow}>
-              <Text style={styles.rankEmoji}>🥇</Text>
-              <Text style={styles.rankText}>Gold (70-100)</Text>
-            </View>
-          </View>
-
-          <Text style={styles.difficultyPrompt}>Choose your difficulty:</Text>
-
-          <TouchableOpacity
-            style={[styles.difficultyCard, styles.easyCard]}
-            onPress={() => selectDifficulty('easy')}
-          >
-            <Text style={styles.difficultyEmoji}>🌱</Text>
-            <Text style={styles.difficultyTitle}>Easy</Text>
-            <Text style={styles.difficultyDescription}>
-              Target: {TARGET_WPM.easy} WPM{'\n'}
-              High Score: {highScores.easy || 0}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.difficultyCard, styles.mediumCard]}
-            onPress={() => selectDifficulty('medium')}
-          >
-            <Text style={styles.difficultyEmoji}>🔥</Text>
-            <Text style={styles.difficultyTitle}>Medium</Text>
-            <Text style={styles.difficultyDescription}>
-              Target: {TARGET_WPM.medium} WPM{'\n'}
-              High Score: {highScores.medium || 0}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.difficultyCard, styles.hardCard]}
-            onPress={() => selectDifficulty('hard')}
-          >
-            <Text style={styles.difficultyEmoji}>💎</Text>
-            <Text style={styles.difficultyTitle}>Hard</Text>
-            <Text style={styles.difficultyDescription}>
-              Target: {TARGET_WPM.hard} WPM{'\n'}
-              High Score: {highScores.hard || 0}
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // Main Challenge Screen
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Challenge Mode</Text>
-          <Text style={styles.headerSubtitle}>
-            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} • Target: {TARGET_WPM[difficulty]} WPM
-          </Text>
-        </View>
+        <Text style={styles.headerTitle}>challenge mode</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {isRecording && (
-          <View style={styles.timerCard}>
-            <Text style={styles.timerText}>⏱️ {(elapsedTime / 10).toFixed(1)}s</Text>
+      {/* Timer and Metrics Bar */}
+      <View style={styles.metricsBar}>
+        <View style={styles.metricItem}>
+          <Ionicons name="time-outline" size={18} color={colors.accent} />
+          <Text style={styles.metricLabel}>time</Text>
+          <Text style={styles.metricValue}>{formatTime(elapsedTime)}</Text>
+        </View>
+        {wpm !== null && (
+          <View style={styles.metricItem}>
+            <Ionicons name="speedometer-outline" size={18} color={colors.secondary} />
+            <Text style={styles.metricLabel}>wpm</Text>
+            <Text style={styles.metricValue}>{wpm}</Text>
           </View>
         )}
-
-        <View style={styles.instructionCard}>
-          <Text style={styles.instructionTitle}>Challenge Rules:</Text>
-          <Text style={styles.instructionText}>
-            1. Read the passage as quickly as possible{'\n'}
-            2. Maintain high accuracy{'\n'}
-            3. Your score is based on SPEED + ACCURACY
-          </Text>
-        </View>
-
-        {isGenerating ? (
-          <View style={styles.generatingCard}>
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={styles.generatingText}>
-              ⚔️ Preparing your challenge...
-            </Text>
+        {score !== null && (
+          <View style={styles.metricItem}>
+            <Ionicons name="checkmark-circle-outline" size={18} color={colors.quaternary} />
+            <Text style={styles.metricLabel}>accuracy</Text>
+            <Text style={styles.metricValue}>{score}%</Text>
           </View>
-        ) : currentPassage && (
+        )}
+      </View>
+
+      <View style={styles.contentWrapper}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Instructions - Only show when not recording and not finished */}
+          {!isRecording && !hasFinished && (
+            <View style={styles.instructionCard}>
+              <Text style={styles.instructionTitle}>⚡ challenge rules</Text>
+              <Text style={styles.instructionText}>
+                read the passage quickly and accurately. your time and accuracy will be tracked.
+              </Text>
+            </View>
+          )}
+
+          {/* Text Display */}
           <View style={styles.textCard}>
-            <Text style={styles.textTitle}>Read this passage:</Text>
-            <View style={styles.textContent}>
-              {wordStates.length > 0 ? (
-                wordStates.map((wordState, index) => renderWord(wordState, index))
-              ) : (
-                <Text style={styles.word}>{currentPassage.text}</Text>
-              )}
-            </View>
-          </View>
-        )}
-
-        <View style={styles.microphoneContainer}>
-          <TouchableOpacity
-            style={[
-              styles.microphoneButton,
-              isRecording && styles.microphoneButtonActive,
-              isProcessing && styles.microphoneButtonProcessing,
-            ]}
-            onPress={isRecording ? stopRecording : startRecording}
-            disabled={isProcessing || isGenerating}
-          >
-            {isProcessing ? (
-              <ActivityIndicator size="large" color="#fff" />
-            ) : (
-              <Ionicons
-                name={isRecording ? 'stop' : 'mic'}
-                size={48}
-                color="#fff"
-              />
-            )}
-          </TouchableOpacity>
-          <Text style={styles.microphoneLabel}>
-            {isProcessing
-              ? 'Analyzing...'
-              : isRecording
-              ? 'Tap to finish'
-              : 'Tap to start challenge'}
-          </Text>
-        </View>
-
-        {hasFinished && (
-          <View style={styles.resultsCard}>
-            <View style={styles.rankDisplay}>
-              <Text style={styles.rankEmojiLarge}>{rank?.emoji}</Text>
-              <Text style={[styles.rankName, { color: rank?.color }]}>{rank?.name}</Text>
-            </View>
-
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Accuracy</Text>
-                <Text style={styles.statValue}>{accuracyScore}%</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Speed</Text>
-                <Text style={styles.statValue}>{wpm} WPM</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Score</Text>
-                <Text style={styles.statValue}>{totalScore}</Text>
-              </View>
-            </View>
-
-            {isNewHighScore && (
-              <View style={styles.highScoreBanner}>
-                <Text style={styles.highScoreText}>🎉 NEW HIGH SCORE! 🎉</Text>
-              </View>
-            )}
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.tryAgainButton]}
-                onPress={tryNewChallenge}
-              >
-                <Text style={styles.actionButtonText}>Try Again</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton, styles.changeDifficultyButton]}
-                onPress={() => setDifficulty(null)}
-              >
-                <Text style={styles.actionButtonText}>Change Level</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Rank Achievement Modal */}
-      <Modal
-        visible={showRankModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowRankModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.rankModal}>
-            <Text style={styles.modalRankEmoji}>{rank?.emoji}</Text>
-            <Text style={styles.modalTitle}>
-              {isNewHighScore ? 'New High Score!' : 'Challenge Complete!'}
+            <Text style={styles.textTitle}>
+              {hasFinished ? 'your performance:' : 'read this passage:'}
             </Text>
-            <Text style={[styles.modalRank, { color: rank?.color }]}>
-              {rank?.name} Rank
-            </Text>
-            <Text style={styles.modalScore}>Score: {totalScore}</Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setShowRankModal(false)}
+            <ScrollView 
+              style={styles.textScrollView}
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.modalButtonText}>Continue</Text>
-            </TouchableOpacity>
+              <View style={styles.textContent}>
+                {wordStates.length > 0 ? (
+                  wordStates.map((wordState, index) => renderWord(wordState, index))
+                ) : (
+                  <Text style={styles.word}>{CHALLENGE_TEXT}</Text>
+                )}
+              </View>
+            </ScrollView>
           </View>
-        </View>
-      </Modal>
-    </View>
+
+          {/* Transcribed Text - Only show if there's content and not finished */}
+          {transcribedText.length > 0 && !hasFinished && (
+            <View style={styles.transcriptCard}>
+              <Text style={styles.transcriptTitle}>what we heard:</Text>
+              <Text style={styles.transcriptText}>{transcribedText}</Text>
+            </View>
+          )}
+
+          {/* Results Display */}
+          {hasFinished && (
+            <View style={styles.resultsCard}>
+              <Text style={styles.resultsTitle}>challenge complete! 🎉</Text>
+
+              <View style={styles.resultsGrid}>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultLabel}>accuracy</Text>
+                  <Text style={[styles.resultValue, { color: colors.quaternary }]}>
+                    {score}%
+                  </Text>
+                </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultLabel}>wpm</Text>
+                  <Text style={[styles.resultValue, { color: colors.secondary }]}>
+                    {wpm}
+                  </Text>
+                </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultLabel}>time</Text>
+                  <Text style={[styles.resultValue, { color: colors.accent }]}>
+                    {formatTime(elapsedTime)}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.performanceLabel}>
+                {score >= 90 && wpm >= 100
+                  ? 'outstanding! 🌟'
+                  : score >= 80 && wpm >= 80
+                  ? 'excellent work! 🎯'
+                  : score >= 70 && wpm >= 60
+                  ? 'great effort! 💪'
+                  : 'keep practicing! 📚'}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.tryAgainButton}
+                onPress={resetSession}
+              >
+                <Text style={styles.tryAgainText}>try again</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Microphone Button - Fixed at bottom, outside ScrollView */}
+        {!hasFinished && (
+          <View style={styles.microphoneContainer}>
+            <TouchableOpacity
+              style={[
+                styles.microphoneButton,
+                isRecording && styles.microphoneButtonActive,
+                isProcessing && styles.microphoneButtonProcessing,
+              ]}
+              onPress={isRecording ? stopRecording : startRecording}
+              disabled={isProcessing}
+              activeOpacity={0.8}
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="large" color={colors.accentForeground} />
+              ) : (
+                <Ionicons
+                  name={isRecording ? 'stop' : 'mic'}
+                  size={40}
+                  color={colors.accentForeground}
+                />
+              )}
+            </TouchableOpacity>
+            <Text style={styles.microphoneLabel}>
+              {isProcessing
+                ? 'processing...'
+                : isRecording
+                ? 'tap to stop'
+                : 'tap to start'}
+            </Text>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -581,343 +385,245 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    backgroundColor: colors.card,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.foreground,
   },
   backButton: {
     padding: spacing.xs,
   },
-  headerCenter: {
-    alignItems: 'center',
-  },
   headerTitle: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-  },
-  headerSubtitle: {
-    fontSize: fontSize.sm,
-    color: colors.textLight,
-    marginTop: 2,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
   },
   placeholder: {
     width: 40,
+  },
+  metricsBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'space-around',
+    borderBottomWidth: 2,
+    borderBottomColor: colors.border,
+  },
+  metricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  metricLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.mutedForeground,
+    marginTop: spacing.xs,
+    textTransform: 'lowercase',
+  },
+  metricValue: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginTop: 2,
+  },
+  contentWrapper: {
+    flex: 1,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: spacing.lg,
-  },
-  difficultyContainer: {
-    padding: spacing.xl,
-    alignItems: 'stretch',
-  },
-  challengeTitle: {
-    fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  challengeSubtitle: {
-    fontSize: fontSize.md,
-    color: colors.textLight,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 22,
-  },
-  rankLegend: {
-    backgroundColor: colors.cream,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  legendTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  rankRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  rankEmoji: {
-    fontSize: 24,
-    marginRight: spacing.md,
-  },
-  rankText: {
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  difficultyPrompt: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  difficultyCard: {
-    backgroundColor: '#fff',
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-    alignItems: 'center',
-    borderWidth: 3,
-    ...shadows.medium,
-  },
-  easyCard: {
-    borderColor: '#7ED957',
-  },
-  mediumCard: {
-    borderColor: colors.secondary,
-  },
-  hardCard: {
-    borderColor: colors.accent,
-  },
-  difficultyEmoji: {
-    fontSize: 56,
-    marginBottom: spacing.md,
-  },
-  difficultyTitle: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  difficultyDescription: {
-    fontSize: fontSize.md,
-    color: colors.textLight,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  timerCard: {
-    backgroundColor: colors.accent,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    alignItems: 'center',
-  },
-  timerText: {
-    fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.bold,
-    color: '#fff',
+    paddingBottom: spacing.xl + 120, // Extra padding for fixed mic button
   },
   instructionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.secondary,
+    ...shadows.card,
   },
   instructionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.xs,
+    textTransform: 'lowercase',
   },
   instructionText: {
-    fontSize: fontSize.md,
-    color: colors.textLight,
-    lineHeight: 24,
-  },
-  generatingCard: {
-    backgroundColor: '#fff',
-    borderRadius: borderRadius.lg,
-    padding: spacing.xxl,
-    marginBottom: spacing.lg,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
-  generatingText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: colors.text,
-    marginTop: spacing.lg,
-    textAlign: 'center',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
+    color: colors.mutedForeground,
+    lineHeight: 20,
+    textTransform: 'lowercase',
   },
   textCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     borderWidth: 2,
     borderColor: colors.accent,
+    maxHeight: 200,
+    ...shadows.card,
   },
   textTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+    textTransform: 'lowercase',
+  },
+  textScrollView: {
+    maxHeight: 150,
   },
   textContent: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
   word: {
-    fontSize: fontSize.md,
-    color: colors.text,
-    lineHeight: 28,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
+    color: colors.foreground,
+    lineHeight: 22,
   },
   correctWord: {
-    backgroundColor: '#C8E6C9',
-    color: '#2E7D32',
-    paddingHorizontal: 4,
-    borderRadius: 4,
+    backgroundColor: colors.quaternary,
+    color: colors.foreground,
+    paddingHorizontal: 3,
+    borderRadius: 3,
+    fontWeight: fontWeight.bold,
   },
   incorrectWord: {
-    backgroundColor: '#FFCDD2',
-    color: '#C62828',
-    paddingHorizontal: 4,
-    borderRadius: 4,
+    backgroundColor: colors.secondary,
+    color: colors.foreground,
+    paddingHorizontal: 3,
+    borderRadius: 3,
+    fontWeight: fontWeight.bold,
   },
   microphoneContainer: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    marginVertical: spacing.xl,
+    backgroundColor: colors.background,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: 2,
+    borderTopColor: colors.border,
+    ...shadows.hard,
   },
   microphoneButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.large,
+    borderWidth: 3,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   microphoneButtonActive: {
-    backgroundColor: '#E53935',
-  },
-  microphoneButtonProcessing: {
     backgroundColor: colors.secondary,
   },
+  microphoneButtonProcessing: {
+    backgroundColor: colors.tertiary,
+  },
   microphoneLabel: {
-    marginTop: spacing.md,
-    fontSize: fontSize.md,
+    marginTop: spacing.sm,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    color: colors.textLight,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
+  },
+  transcriptCard: {
+    backgroundColor: colors.muted,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  transcriptTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.xs,
+    textTransform: 'lowercase',
+  },
+  transcriptText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
+    color: colors.mutedForeground,
+    lineHeight: 20,
   },
   resultsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
-  rankDisplay: {
+    padding: spacing.lg,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.secondary,
     marginBottom: spacing.xl,
+    ...shadows.card,
   },
-  rankEmojiLarge: {
-    fontSize: 80,
+  resultsTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.md,
+    textTransform: 'lowercase',
   },
-  rankName: {
-    fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.bold,
-  },
-  statsGrid: {
+  resultsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: spacing.lg,
+    width: '100%',
+    marginBottom: spacing.md,
   },
-  statItem: {
+  resultItem: {
     alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  statValue: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-  },
-  highScoreBanner: {
-    backgroundColor: '#FFD700',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  highScoreText: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  actionButton: {
     flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
+  },
+  resultLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.mutedForeground,
+    marginBottom: spacing.xs,
+    textTransform: 'lowercase',
+  },
+  resultValue: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.extraBold,
+  },
+  performanceLabel: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.mutedForeground,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+    textTransform: 'lowercase',
   },
   tryAgainButton: {
     backgroundColor: colors.accent,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
-  changeDifficultyButton: {
-    backgroundColor: colors.secondary,
-  },
-  actionButtonText: {
+  tryAgainText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: '#fff',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  rankModal: {
-    backgroundColor: '#fff',
-    borderRadius: borderRadius.xl,
-    padding: spacing.xxl,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 400,
-  },
-  modalRankEmoji: {
-    fontSize: 100,
-    marginBottom: spacing.lg,
-  },
-  modalTitle: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  modalRank: {
-    fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.sm,
-  },
-  modalScore: {
-    fontSize: fontSize.xl,
-    color: colors.textLight,
-    marginBottom: spacing.xl,
-  },
-  modalButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-  },
-  modalButtonText: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: '#fff',
+    color: colors.accentForeground,
+    textTransform: 'lowercase',
   },
 });
 

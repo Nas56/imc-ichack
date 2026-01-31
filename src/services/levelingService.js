@@ -10,11 +10,19 @@ const BASE_XP = {
   hard: 50,
 };
 
-// XP required for each level (exponential growth)
-// Formula: baseXP * (level ^ 1.5)
+// XP required for each level
+// DEMO MODE: Level 2 requires only 5 XP for quick demo unlock
+// After demo, can revert to exponential growth formula
 const calculateXPForLevel = (level) => {
+  // Special case for demo: level 2 unlocks at 5 XP
+  if (level === 1) {
+    return 5; // 5 XP needed to reach level 2
+  }
+  
+  // For levels 3+, use exponential growth
+  // Formula: baseXP * ((level - 1) ^ 1.5) + 5
   const baseXP = 100;
-  return Math.floor(baseXP * Math.pow(level, 1.5));
+  return Math.floor(baseXP * Math.pow(level - 1, 1.5)) + 5;
 };
 
 // Generate XP requirements for levels 1-100
@@ -112,7 +120,7 @@ export const getXPRequirement = (level) => {
  */
 export const getLevelRewards = (level) => {
   const rewards = {
-    challengeModeUnlocked: level >= 5,
+    challengeModeUnlocked: level >= 2, // DEMO: Unlocks at level 2 instead of 5
     hardDifficultyUnlocked: level >= 10,
     customPassagesUnlocked: level >= 15,
   };
