@@ -12,7 +12,7 @@ import {
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { ref, set } from 'firebase/database';
 import { auth, db } from '../../../firebaseConfig';
-import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 import { Button, Input, Card } from '../../components';
 
 export const AuthScreen = ({ onAuthSuccess }) => {
@@ -118,107 +118,113 @@ export const AuthScreen = ({ onAuthSuccess }) => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>📚</Text>
-          <Text style={styles.appName}>ReadRise</Text>
-          <Text style={styles.tagline}>Your Reading Adventure Awaits</Text>
+        {/* Hero Header with Decorative Elements */}
+        <View style={styles.heroSection}>
+          {/* Decorative Shapes */}
+          <View style={styles.decorativeCircle1} />
+          <View style={styles.decorativeCircle2} />
+          <View style={styles.decorativeTriangle} />
+          
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoCircle}>
+                <Text style={styles.logo}>📚</Text>
+              </View>
+            </View>
+            <Text style={styles.appName}>readrise.</Text>
+            <Text style={styles.tagline}>your reading adventure awaits</Text>
+          </View>
         </View>
 
-        {/* Auth Card */}
-        <Card style={styles.authCard}>
-          <Text style={styles.cardTitle}>
-            {isLogin ? '👋 Welcome Back!' : '✨ Create Account'}
-          </Text>
-          <Text style={styles.cardSubtitle}>
-            {isLogin
-              ? 'Continue your reading journey'
-              : 'Start your reading adventure today'}
-          </Text>
+        {/* Auth Card - Sticker Style */}
+        <View style={styles.cardContainer}>
+          <Card style={styles.authCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>
+                {isLogin ? '👋 welcome back!' : '✨ create account'}
+              </Text>
+              <Text style={styles.cardSubtitle}>
+                {isLogin
+                  ? 'continue your reading journey'
+                  : 'start your reading adventure today'}
+              </Text>
+            </View>
 
-          <View style={styles.form}>
-            <Input
-              label="Email"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errors.email) setErrors({ ...errors, email: null });
-              }}
-              placeholder="your.email@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!loading}
-              error={errors.email}
-            />
-
-            <Input
-              label="Password"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errors.password) setErrors({ ...errors, password: null });
-              }}
-              placeholder="Enter your password"
-              secureTextEntry
-              editable={!loading}
-              error={errors.password}
-            />
-
-            {!isLogin && (
+            <View style={styles.form}>
               <Input
-                label="Confirm Password"
-                value={confirmPassword}
+                label="Email"
+                value={email}
                 onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null });
+                  setEmail(text);
+                  if (errors.email) setErrors({ ...errors, email: null });
                 }}
-                placeholder="Confirm your password"
+                placeholder="your.email@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!loading}
+                error={errors.email}
+              />
+
+              <Input
+                label="Password"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) setErrors({ ...errors, password: null });
+                }}
+                placeholder="Enter your password"
                 secureTextEntry
                 editable={!loading}
-                error={errors.confirmPassword}
+                error={errors.password}
               />
-            )}
 
-            <Button
-              title={isLogin ? 'Log In' : 'Create Account'}
-              variant="primary"
-              size="large"
-              onPress={isLogin ? handleLogin : handleRegister}
-              loading={loading}
-              style={styles.submitButton}
-            />
+              {!isLogin && (
+                <Input
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null });
+                  }}
+                  placeholder="Confirm your password"
+                  secureTextEntry
+                  editable={!loading}
+                  error={errors.confirmPassword}
+                />
+              )}
 
-            <TouchableOpacity onPress={switchMode} disabled={loading} style={styles.switchButton}>
-              <Text style={styles.switchText}>
-                {isLogin ? "Don't have an account? " : 'Already have an account? '}
-                <Text style={styles.switchTextBold}>
-                  {isLogin ? 'Sign up' : 'Log in'}
+              <TouchableOpacity
+                style={[styles.pillButton, styles.pillButtonPrimary]}
+                onPress={isLogin ? handleLogin : handleRegister}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.pillButtonTextPrimary}>
+                  {loading ? 'loading...' : isLogin ? 'log in' : 'create account'}
                 </Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
+              </TouchableOpacity>
 
-        {/* Features Preview */}
-        {!isLogin && (
-          <View style={styles.features}>
-            <FeatureItem emoji="📖" text="Read amazing books" />
-            <FeatureItem emoji="🎤" text="Practice reading aloud" />
-            <FeatureItem emoji="🏆" text="Earn achievements" />
-            <FeatureItem emoji="🌟" text="Track your progress" />
-          </View>
-        )}
+              <TouchableOpacity 
+                onPress={switchMode} 
+                disabled={loading} 
+                style={styles.switchButton}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.switchText}>
+                  {isLogin ? "don't have an account? " : 'already have an account? '}
+                  <Text style={styles.switchTextBold}>
+                    {isLogin ? 'sign up' : 'log in'}
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
-const FeatureItem = ({ emoji, text }) => (
-  <View style={styles.featureItem}>
-    <Text style={styles.featureEmoji}>{emoji}</Text>
-    <Text style={styles.featureText}>{text}</Text>
-  </View>
-);
 
 const styles = StyleSheet.create({
   container: {
@@ -227,76 +233,159 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: spacing.lg,
+  },
+  
+  // Hero Section
+  heroSection: {
+    position: 'relative',
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl * 1.5,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.xxl * 2,
+    paddingBottom: spacing.md,
+    overflow: 'hidden',
+  },
+  decorativeCircle1: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: colors.tertiary,
+    opacity: 0.2,
+    top: -40,
+    right: -40,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.secondary,
+    opacity: 0.15,
+    top: 60,
+    left: -30,
+  },
+  decorativeTriangle: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    borderLeftWidth: 40,
+    borderRightWidth: 40,
+    borderBottomWidth: 70,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: colors.quaternary,
+    opacity: 0.2,
+    top: 100,
+    right: spacing.xl,
+    transform: [{ rotate: '15deg' }],
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    zIndex: 1,
+  },
+  logoContainer: {
+    marginBottom: spacing.sm,
+  },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.accent,
+    borderWidth: 3,
+    borderColor: colors.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.hard,
   },
   logo: {
-    fontSize: 64,
-    marginBottom: spacing.sm,
+    fontSize: 48,
   },
   appName: {
     fontSize: fontSize.xxxl,
     fontWeight: fontWeight.extraBold,
-    color: colors.primary,
+    color: colors.foreground,
     marginBottom: spacing.xs,
+    letterSpacing: -1,
   },
   tagline: {
     fontSize: fontSize.md,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     textAlign: 'center',
+    textTransform: 'lowercase',
   },
+  
+  // Card Container
+  cardContainer: {
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  
+  // Auth Card - Sticker Style
   authCard: {
-    marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+    ...shadows.card,
+  },
+  cardHeader: {
+    marginBottom: spacing.sm,
   },
   cardTitle: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.xs,
+    textTransform: 'lowercase',
   },
   cardSubtitle: {
     fontSize: fontSize.sm,
-    color: colors.textLight,
-    marginBottom: spacing.lg,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
   },
   form: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
-  submitButton: {
-    marginTop: spacing.md,
-  },
-  switchButton: {
-    marginTop: spacing.lg,
+  
+  // Pill Button
+  pillButton: {
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    backgroundColor: 'transparent',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    minHeight: 48,
+  },
+  pillButtonPrimary: {
+    backgroundColor: colors.accent,
+    borderColor: colors.foreground,
+    ...shadows.hard,
+  },
+  pillButtonTextPrimary: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.accentForeground,
+    textTransform: 'lowercase',
+  },
+  
+  switchButton: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
   },
   switchText: {
     fontSize: fontSize.sm,
-    color: colors.textLight,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
   },
   switchTextBold: {
     fontWeight: fontWeight.bold,
-    color: colors.primary,
-  },
-  features: {
-    marginTop: spacing.lg,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  featureEmoji: {
-    fontSize: 24,
-    marginRight: spacing.md,
-  },
-  featureText: {
-    fontSize: fontSize.md,
-    color: colors.text,
+    color: colors.accent,
   },
 });
 

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
-import { colors, borderRadius, spacing, fontSize, fontWeight } from '../theme';
+import { colors, borderRadius, spacing, fontSize, fontWeight, shadows } from '../theme';
 
 export const Input = ({
   label,
@@ -15,25 +15,39 @@ export const Input = ({
   style,
   ...props
 }) => {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
+      {label && (
+        <Text style={styles.label}>
+          {label.toUpperCase()}
+        </Text>
+      )}
+      <View
         style={[
-          styles.input,
-          error && styles.inputError,
-          !editable && styles.inputDisabled,
+          styles.inputWrapper,
+          isFocused && styles.inputWrapperFocused,
+          error && styles.inputWrapperError,
+          !editable && styles.inputWrapperDisabled,
         ]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        editable={editable}
-        {...props}
-      />
+      >
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedForeground}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          editable={editable}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          blurOnSubmit={false}
+          {...props}
+        />
+      </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
@@ -44,30 +58,38 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   label: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    color: colors.text,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
     marginBottom: spacing.sm,
+    letterSpacing: 1,
   },
-  input: {
-    backgroundColor: colors.cream,
+  inputWrapper: {
+    backgroundColor: colors.input,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: fontSize.md,
-    color: colors.text,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: colors.border,
   },
-  inputError: {
+  inputWrapperFocused: {
+    borderColor: colors.accent,
+  },
+  inputWrapperError: {
     borderColor: colors.error,
   },
-  inputDisabled: {
+  inputWrapperDisabled: {
     opacity: 0.6,
+  },
+  input: {
+    padding: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.foreground,
+    minHeight: 48,
   },
   errorText: {
     fontSize: fontSize.xs,
     color: colors.error,
     marginTop: spacing.xs,
+    textTransform: 'lowercase',
   },
 });
 

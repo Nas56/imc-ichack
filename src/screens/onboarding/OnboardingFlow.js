@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
-import { Button, Card } from '../../components';
+import { Card } from '../../components';
 
 export const OnboardingFlow = ({ onComplete }) => {
   const [step, setStep] = useState(0);
@@ -14,26 +14,26 @@ export const OnboardingFlow = ({ onComplete }) => {
   const steps = [
     {
       emoji: '👋',
-      title: 'Welcome to ReadRise!',
-      subtitle: 'Your reading adventure starts here',
+      title: 'welcome to readrise!',
+      subtitle: 'your reading adventure starts here',
       content: WelcomeStep,
     },
     {
       emoji: '🎂',
-      title: 'How old are you?',
-      subtitle: 'This helps us recommend the right books',
+      title: 'how old are you?',
+      subtitle: 'this helps us recommend the right books',
       content: AgeStep,
     },
     {
       emoji: '📚',
-      title: 'Reading Level',
-      subtitle: 'Choose what feels comfortable',
+      title: 'reading level',
+      subtitle: 'choose what feels comfortable',
       content: ReadingLevelStep,
     },
     {
       emoji: '🎯',
-      title: 'Your Goals',
-      subtitle: 'What would you like to achieve?',
+      title: 'your goals',
+      subtitle: 'what would you like to achieve?',
       content: GoalsStep,
     },
   ];
@@ -65,7 +65,14 @@ export const OnboardingFlow = ({ onComplete }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.emoji}>{currentStepData.emoji}</Text>
+        {/* Decorative Circle */}
+        <View style={styles.decorativeCircle} />
+        
+        <View style={styles.emojiContainer}>
+          <View style={styles.emojiCircle}>
+            <Text style={styles.emoji}>{currentStepData.emoji}</Text>
+          </View>
+        </View>
         <Text style={styles.title}>{currentStepData.title}</Text>
         <Text style={styles.subtitle}>{currentStepData.subtitle}</Text>
 
@@ -93,22 +100,27 @@ export const OnboardingFlow = ({ onComplete }) => {
 
       <View style={styles.footer}>
         {step > 0 && (
-          <Button
-            title="Back"
-            variant="ghost"
-            size="medium"
-            onPress={handleBack}
+          <TouchableOpacity
             style={styles.backButton}
-          />
+            onPress={handleBack}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.backButtonText}>back</Text>
+          </TouchableOpacity>
         )}
-        <Button
-          title={step === steps.length - 1 ? "Let's Go!" : 'Next'}
-          variant="primary"
-          size="large"
+        <TouchableOpacity
+          style={[
+            styles.nextButton,
+            !canProceed() && styles.nextButtonDisabled,
+          ]}
           onPress={handleNext}
           disabled={!canProceed()}
-          style={styles.nextButton}
-        />
+          activeOpacity={0.8}
+        >
+          <Text style={styles.nextButtonText}>
+            {step === steps.length - 1 ? "let's go!" : 'next'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -117,27 +129,39 @@ export const OnboardingFlow = ({ onComplete }) => {
 // Step 1: Welcome
 const WelcomeStep = () => (
   <View style={styles.stepContainer}>
-    <Text style={styles.welcomeText}>
-      📖 Read amazing stories{'\n'}
-      🎤 Practice reading aloud{'\n'}
-      🏆 Earn achievements{'\n'}
-      🌟 Level up your skills
-    </Text>
-    <Card style={styles.tipCard} variant="primary">
-      <Text style={styles.tipTitle}>💡 Did you know?</Text>
+    <View style={styles.welcomeFeatures}>
+      <FeatureItem emoji="📖" text="read amazing stories" color={colors.accent} />
+      <FeatureItem emoji="🎤" text="practice reading aloud" color={colors.secondary} />
+      <FeatureItem emoji="🏆" text="earn achievements" color={colors.tertiary} />
+      <FeatureItem emoji="🌟" text="level up your skills" color={colors.quaternary} />
+    </View>
+    <Card style={styles.tipCard}>
+      <View style={styles.tipIconCircle}>
+        <Text style={styles.tipIcon}>💡</Text>
+      </View>
+      <Text style={styles.tipTitle}>did you know?</Text>
       <Text style={styles.tipText}>
-        Reading just 20 minutes a day can expose you to over 1.8 million words a year!
+        reading just 20 minutes a day can expose you to over 1.8 million words a year!
       </Text>
     </Card>
+  </View>
+);
+
+const FeatureItem = ({ emoji, text, color }) => (
+  <View style={styles.featureItem}>
+    <View style={[styles.featureIconCircle, { backgroundColor: color }]}>
+      <Text style={styles.featureEmoji}>{emoji}</Text>
+    </View>
+    <Text style={styles.featureText}>{text}</Text>
   </View>
 );
 
 // Step 2: Age selection
 const AgeStep = ({ userData, setUserData }) => {
   const ageRanges = [
-    { label: '8-10 years', value: '8-10', emoji: '🧒' },
-    { label: '11-14 years', value: '11-14', emoji: '🧑' },
-    { label: '15+ years', value: '15+', emoji: '👤' },
+    { label: '8-10 years', value: '8-10', emoji: '🧒', color: colors.accent },
+    { label: '11-14 years', value: '11-14', emoji: '🧑', color: colors.secondary },
+    { label: '15+ years', value: '15+', emoji: '👤', color: colors.tertiary },
   ];
 
   return (
@@ -148,10 +172,15 @@ const AgeStep = ({ userData, setUserData }) => {
           style={[
             styles.optionCard,
             userData.ageRange === range.value && styles.optionCardSelected,
+            { borderColor: range.color },
+            userData.ageRange === range.value && { borderColor: colors.foreground },
           ]}
           onPress={() => setUserData({ ...userData, ageRange: range.value })}
+          activeOpacity={0.8}
         >
-          <Text style={styles.optionEmoji}>{range.emoji}</Text>
+          <View style={[styles.optionIconCircle, { backgroundColor: range.color }]}>
+            <Text style={styles.optionEmoji}>{range.emoji}</Text>
+          </View>
           <Text style={styles.optionLabel}>{range.label}</Text>
           {userData.ageRange === range.value && (
             <View style={styles.checkmark}>
@@ -167,9 +196,9 @@ const AgeStep = ({ userData, setUserData }) => {
 // Step 3: Reading level
 const ReadingLevelStep = ({ userData, setUserData }) => {
   const levels = [
-    { label: 'Beginner', value: 'beginner', emoji: '🌱', description: 'Just starting out' },
-    { label: 'Intermediate', value: 'intermediate', emoji: '🌿', description: 'Getting confident' },
-    { label: 'Advanced', value: 'advanced', emoji: '🌳', description: 'Ready for challenges' },
+    { label: 'beginner', value: 'beginner', emoji: '🌱', description: 'just starting out', color: colors.quaternary },
+    { label: 'intermediate', value: 'intermediate', emoji: '🌿', description: 'getting confident', color: colors.tertiary },
+    { label: 'advanced', value: 'advanced', emoji: '🌳', description: 'ready for challenges', color: colors.accent },
   ];
 
   return (
@@ -180,10 +209,15 @@ const ReadingLevelStep = ({ userData, setUserData }) => {
           style={[
             styles.optionCard,
             userData.readingLevel === level.value && styles.optionCardSelected,
+            { borderColor: level.color },
+            userData.readingLevel === level.value && { borderColor: colors.foreground },
           ]}
           onPress={() => setUserData({ ...userData, readingLevel: level.value })}
+          activeOpacity={0.8}
         >
-          <Text style={styles.optionEmoji}>{level.emoji}</Text>
+          <View style={[styles.optionIconCircle, { backgroundColor: level.color }]}>
+            <Text style={styles.optionEmoji}>{level.emoji}</Text>
+          </View>
           <View style={styles.optionTextContainer}>
             <Text style={styles.optionLabel}>{level.label}</Text>
             <Text style={styles.optionDescription}>{level.description}</Text>
@@ -202,10 +236,10 @@ const ReadingLevelStep = ({ userData, setUserData }) => {
 // Step 4: Goals
 const GoalsStep = ({ userData, setUserData }) => {
   const goals = [
-    { label: 'Read more fluently', value: 'fluency', emoji: '🎯' },
-    { label: 'Build confidence', value: 'confidence', emoji: '💪' },
-    { label: 'Discover new books', value: 'discovery', emoji: '🗺️' },
-    { label: 'Have fun reading', value: 'fun', emoji: '🎉' },
+    { label: 'read more fluently', value: 'fluency', emoji: '🎯', color: colors.accent },
+    { label: 'build confidence', value: 'confidence', emoji: '💪', color: colors.secondary },
+    { label: 'discover new books', value: 'discovery', emoji: '🗺️', color: colors.tertiary },
+    { label: 'have fun reading', value: 'fun', emoji: '🎉', color: colors.quaternary },
   ];
 
   const toggleGoal = (value) => {
@@ -219,17 +253,22 @@ const GoalsStep = ({ userData, setUserData }) => {
 
   return (
     <View style={styles.stepContainer}>
-      <Text style={styles.helperText}>Select all that apply</Text>
+      <Text style={styles.helperText}>select all that apply</Text>
       {goals.map((goal) => (
         <TouchableOpacity
           key={goal.value}
           style={[
             styles.optionCard,
             userData.goals?.includes(goal.value) && styles.optionCardSelected,
+            { borderColor: goal.color },
+            userData.goals?.includes(goal.value) && { borderColor: colors.foreground },
           ]}
           onPress={() => toggleGoal(goal.value)}
+          activeOpacity={0.8}
         >
-          <Text style={styles.optionEmoji}>{goal.emoji}</Text>
+          <View style={[styles.optionIconCircle, { backgroundColor: goal.color }]}>
+            <Text style={styles.optionEmoji}>{goal.emoji}</Text>
+          </View>
           <Text style={styles.optionLabel}>{goal.label}</Text>
           {userData.goals?.includes(goal.value) && (
             <View style={styles.checkmark}>
@@ -248,44 +287,78 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: spacing.xxl * 2,
+    position: 'relative',
+    paddingTop: spacing.xxl * 1.5,
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.lg,
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: colors.tertiary,
+    opacity: 0.15,
+    top: -50,
+    right: -50,
+  },
+  emojiContainer: {
+    marginBottom: spacing.md,
+    zIndex: 1,
+  },
+  emojiCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.accent,
+    borderWidth: 3,
+    borderColor: colors.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.hard,
   },
   emoji: {
-    fontSize: 64,
-    marginBottom: spacing.md,
+    fontSize: 48,
   },
   title: {
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
+    textTransform: 'lowercase',
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: fontSize.md,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.lg,
+    textTransform: 'lowercase',
   },
   dotsContainer: {
     flexDirection: 'row',
     gap: spacing.sm,
+    zIndex: 1,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.foreground,
   },
   dotActive: {
-    backgroundColor: colors.primary,
-    width: 24,
+    backgroundColor: colors.accent,
+    width: 32,
+    borderColor: colors.foreground,
   },
   dotCompleted: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.quaternary,
+    borderColor: colors.foreground,
   },
   content: {
     flex: 1,
@@ -294,91 +367,195 @@ const styles = StyleSheet.create({
   stepContainer: {
     paddingBottom: spacing.xl,
   },
-  welcomeText: {
-    fontSize: fontSize.lg,
-    lineHeight: 32,
-    color: colors.text,
-    marginBottom: spacing.xl,
+  welcomeFeatures: {
+    marginBottom: spacing.lg,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  featureIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
+  },
+  featureEmoji: {
+    fontSize: 24,
+  },
+  featureText: {
+    fontSize: fontSize.md,
+    color: colors.foreground,
+    fontWeight: fontWeight.medium,
+    textTransform: 'lowercase',
+    flex: 1,
   },
   tipCard: {
-    marginTop: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+    ...shadows.card,
+    position: 'relative',
+  },
+  tipIconCircle: {
+    position: 'absolute',
+    top: -20,
+    right: spacing.lg,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: colors.tertiary,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    ...shadows.hard,
+  },
+  tipIcon: {
+    fontSize: 24,
   },
   tipTitle: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+    textTransform: 'lowercase',
   },
   tipText: {
     fontSize: fontSize.sm,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     lineHeight: 20,
+    textTransform: 'lowercase',
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
     borderWidth: 2,
-    borderColor: 'transparent',
-    ...shadows.small,
+    ...shadows.card,
   },
   optionCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + '10',
+    borderColor: colors.foreground,
+    backgroundColor: colors.card,
+  },
+  optionIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   optionEmoji: {
     fontSize: 32,
-    marginRight: spacing.md,
   },
   optionTextContainer: {
     flex: 1,
   },
   optionLabel: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: colors.text,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
   },
   optionDescription: {
     fontSize: fontSize.sm,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     marginTop: spacing.xs,
+    textTransform: 'lowercase',
   },
   checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accent,
+    borderWidth: 2,
+    borderColor: colors.foreground,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.hard,
   },
   checkmarkText: {
-    color: colors.surface,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    color: colors.accentForeground,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extraBold,
   },
   helperText: {
     fontSize: fontSize.sm,
-    color: colors.textMuted,
+    color: colors.mutedForeground,
     marginBottom: spacing.md,
     textAlign: 'center',
+    textTransform: 'lowercase',
+    fontWeight: fontWeight.medium,
   },
   footer: {
     flexDirection: 'row',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    backgroundColor: colors.card,
+    borderTopWidth: 2,
+    borderTopColor: colors.foreground,
     gap: spacing.md,
   },
   backButton: {
     flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
   },
   nextButton: {
     flex: 2,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.hard,
+  },
+  nextButtonDisabled: {
+    opacity: 0.5,
+    ...shadows.hardPress,
+  },
+  nextButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.accentForeground,
+    textTransform: 'lowercase',
   },
 });
 

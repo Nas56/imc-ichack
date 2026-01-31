@@ -52,24 +52,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: borderRadius.md,
-    ...shadows.small,
+    borderRadius: borderRadius.full,
   },
 
   // Variants
   primary: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   secondary: {
     backgroundColor: colors.secondary,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   accent: {
     backgroundColor: colors.accent,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.foreground,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -97,24 +105,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   primaryText: {
-    color: colors.surface,
+    color: colors.accentForeground,
     fontSize: fontSize.md,
+    textTransform: 'lowercase',
   },
   secondaryText: {
-    color: colors.surface,
+    color: colors.accentForeground,
     fontSize: fontSize.md,
+    textTransform: 'lowercase',
   },
   accentText: {
-    color: colors.surface,
+    color: colors.accentForeground,
     fontSize: fontSize.md,
+    textTransform: 'lowercase',
   },
   outlineText: {
-    color: colors.primary,
+    color: colors.foreground,
     fontSize: fontSize.md,
+    textTransform: 'lowercase',
   },
   ghostText: {
-    color: colors.primary,
+    color: colors.foreground,
     fontSize: fontSize.md,
+    textTransform: 'lowercase',
   },
 
   smallText: {

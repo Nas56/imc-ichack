@@ -231,10 +231,10 @@ const LearnModeScreen = ({ onBack, user }) => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Select Difficulty</Text>
+          <Text style={styles.headerTitle}>select difficulty</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -242,41 +242,50 @@ const LearnModeScreen = ({ onBack, user }) => {
           style={styles.content}
           contentContainerStyle={styles.difficultyContainer}
         >
-          <Text style={styles.difficultyPrompt}>Choose your challenge level:</Text>
+          <Text style={styles.difficultyPrompt}>choose your challenge level:</Text>
 
           <TouchableOpacity
             style={[styles.difficultyCard, styles.easyCard]}
             onPress={() => selectDifficulty('easy')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.difficultyEmoji}>🌱</Text>
-            <Text style={styles.difficultyTitle}>Easy</Text>
+            <View style={[styles.difficultyIconCircle, { backgroundColor: colors.quaternary }]}>
+              <Text style={styles.difficultyEmoji}>🌱</Text>
+            </View>
+            <Text style={styles.difficultyTitle}>easy</Text>
             <Text style={styles.difficultyDescription}>
-              Short passages with simple words{'\n'}
-              ~10 seconds • +{calculateXP('easy', 100)} XP max
+              short passages with simple words{'\n'}
+              ~10 seconds • +{calculateXP('easy', 100)} xp max
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.difficultyCard, styles.mediumCard]}
             onPress={() => selectDifficulty('medium')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.difficultyEmoji}>🔥</Text>
-            <Text style={styles.difficultyTitle}>Medium</Text>
+            <View style={[styles.difficultyIconCircle, { backgroundColor: colors.secondary }]}>
+              <Text style={styles.difficultyEmoji}>🔥</Text>
+            </View>
+            <Text style={styles.difficultyTitle}>medium</Text>
             <Text style={styles.difficultyDescription}>
-              Moderate length with varied vocabulary{'\n'}
-              ~20 seconds • +{calculateXP('medium', 100)} XP max
+              moderate length with varied vocabulary{'\n'}
+              ~20 seconds • +{calculateXP('medium', 100)} xp max
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.difficultyCard, styles.hardCard]}
             onPress={() => selectDifficulty('hard')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.difficultyEmoji}>💎</Text>
-            <Text style={styles.difficultyTitle}>Hard</Text>
+            <View style={[styles.difficultyIconCircle, { backgroundColor: colors.accent }]}>
+              <Text style={styles.difficultyEmoji}>💎</Text>
+            </View>
+            <Text style={styles.difficultyTitle}>hard</Text>
             <Text style={styles.difficultyDescription}>
-              Complex passages with advanced vocabulary{'\n'}
-              ~30 seconds • +{calculateXP('hard', 100)} XP max
+              complex passages with advanced vocabulary{'\n'}
+              ~30 seconds • +{calculateXP('hard', 100)} xp max
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -288,11 +297,11 @@ const LearnModeScreen = ({ onBack, user }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Learn Mode</Text>
+          <Text style={styles.headerTitle}>learn mode</Text>
           <Text style={styles.headerSubtitle}>
             {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
           </Text>
@@ -305,17 +314,17 @@ const LearnModeScreen = ({ onBack, user }) => {
         contentContainerStyle={styles.contentContainer}
       >
         <View style={styles.instructionCard}>
-          <Text style={styles.instructionTitle}>How it works:</Text>
+          <Text style={styles.instructionTitle}>how it works:</Text>
           <Text style={styles.instructionText}>
-            1. Read the text below aloud{'\n'}
-            2. Tap the microphone to start recording{'\n'}
-            3. Tap again to stop and see your results
+            1. read the text below aloud{'\n'}
+            2. tap the microphone to start recording{'\n'}
+            3. tap again to stop and see your results
           </Text>
         </View>
 
         {currentPassage && (
           <View style={styles.textCard}>
-            <Text style={styles.textTitle}>Read this passage:</Text>
+            <Text style={styles.textTitle}>read this passage:</Text>
             <View style={styles.textContent}>
               {wordStates.length > 0 ? (
                 wordStates.map((wordState, index) => renderWord(wordState, index))
@@ -335,64 +344,67 @@ const LearnModeScreen = ({ onBack, user }) => {
             ]}
             onPress={isRecording ? stopRecording : startRecording}
             disabled={isProcessing}
+            activeOpacity={0.8}
           >
             {isProcessing ? (
-              <ActivityIndicator size="large" color="#fff" />
+              <ActivityIndicator size="large" color={colors.accentForeground} />
             ) : (
               <Ionicons
                 name={isRecording ? 'stop' : 'mic'}
                 size={48}
-                color="#fff"
+                color={colors.accentForeground}
               />
             )}
           </TouchableOpacity>
           <Text style={styles.microphoneLabel}>
             {isProcessing
-              ? 'Processing...'
+              ? 'processing...'
               : isRecording
-              ? 'Tap to stop recording'
-              : 'Tap to start recording'}
+              ? 'tap to stop recording'
+              : 'tap to start recording'}
           </Text>
         </View>
 
         {transcribedText.length > 0 && (
           <View style={styles.transcriptCard}>
-            <Text style={styles.transcriptTitle}>What we heard:</Text>
+            <Text style={styles.transcriptTitle}>what we heard:</Text>
             <Text style={styles.transcriptText}>{transcribedText}</Text>
           </View>
         )}
 
         {hasFinished && score !== null && (
           <View style={styles.scoreCard}>
-            <Text style={styles.scoreTitle}>Your Score</Text>
+            <Text style={styles.scoreTitle}>your score</Text>
             <Text style={styles.scoreValue}>{score}%</Text>
             <Text style={styles.scoreLabel}>
               {score >= 90
-                ? 'Excellent! 🌟'
+                ? 'excellent! 🌟'
                 : score >= 70
-                ? 'Great job! 👏'
+                ? 'great job! 👏'
                 : score >= 50
-                ? 'Good effort! 💪'
-                : 'Keep practicing! 📚'}
+                ? 'good effort! 💪'
+                : 'keep practicing! 📚'}
             </Text>
 
             <View style={styles.xpContainer}>
-              <Text style={styles.xpText}>+{earnedXP} XP</Text>
+              <Text style={styles.xpText}>+{earnedXP} xp</Text>
             </View>
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.tryAgainButton]}
                 onPress={tryNewPassage}
+                activeOpacity={0.8}
               >
-                <Text style={styles.actionButtonText}>New Passage</Text>
+                <Text style={styles.actionButtonText}>new passage</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.actionButton, styles.changeDifficultyButton]}
                 onPress={() => setDifficulty(null)}
+                activeOpacity={0.8}
               >
-                <Text style={styles.actionButtonText}>Change Difficulty</Text>
+                <Text style={styles.actionButtonText}>change difficulty</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -408,16 +420,19 @@ const LearnModeScreen = ({ onBack, user }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.levelUpCard}>
-            <Text style={styles.levelUpEmoji}>🎉</Text>
-            <Text style={styles.levelUpTitle}>Level Up!</Text>
+            <View style={styles.levelUpIconCircle}>
+              <Text style={styles.levelUpEmoji}>🎉</Text>
+            </View>
+            <Text style={styles.levelUpTitle}>level up!</Text>
             <Text style={styles.levelUpText}>
-              Level {levelUpInfo?.oldLevel} → {levelUpInfo?.newLevel}
+              level {levelUpInfo?.oldLevel} → {levelUpInfo?.newLevel}
             </Text>
             <TouchableOpacity
               style={styles.levelUpButton}
               onPress={() => setShowLevelUp(false)}
+              activeOpacity={0.8}
             >
-              <Text style={styles.levelUpButtonText}>Awesome!</Text>
+              <Text style={styles.levelUpButtonText}>awesome!</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -438,9 +453,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.md,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    backgroundColor: colors.card,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.foreground,
   },
   backButton: {
     padding: spacing.xs,
@@ -450,13 +465,15 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
   },
   headerSubtitle: {
     fontSize: fontSize.sm,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     marginTop: 2,
+    textTransform: 'lowercase',
   },
   placeholder: {
     width: 40,
@@ -473,22 +490,24 @@ const styles = StyleSheet.create({
   },
   difficultyPrompt: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     textAlign: 'center',
     marginBottom: spacing.xl,
+    textTransform: 'lowercase',
   },
   difficultyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
     marginBottom: spacing.lg,
     alignItems: 'center',
-    borderWidth: 3,
-    ...shadows.medium,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.card,
   },
   easyCard: {
-    borderColor: '#7ED957',
+    borderColor: colors.quaternary,
   },
   mediumCard: {
     borderColor: colors.secondary,
@@ -496,55 +515,72 @@ const styles = StyleSheet.create({
   hardCard: {
     borderColor: colors.accent,
   },
-  difficultyEmoji: {
-    fontSize: 56,
+  difficultyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
+  },
+  difficultyEmoji: {
+    fontSize: 48,
   },
   difficultyTitle: {
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.sm,
+    textTransform: 'lowercase',
   },
   difficultyDescription: {
     fontSize: fontSize.md,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     textAlign: 'center',
     lineHeight: 22,
+    textTransform: 'lowercase',
   },
   instructionCard: {
-    backgroundColor: '#fff',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-  },
-  instructionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  instructionText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.regular,
-    color: colors.textLight,
-    lineHeight: 24,
-  },
-  textCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.foreground,
+    ...shadows.card,
+  },
+  instructionTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+    textTransform: 'lowercase',
+  },
+  instructionText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.regular,
+    color: colors.mutedForeground,
+    lineHeight: 24,
+    textTransform: 'lowercase',
+  },
+  textCard: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    ...shadows.card,
   },
   textTitle: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.md,
+    textTransform: 'lowercase',
   },
   textContent: {
     flexDirection: 'row',
@@ -553,20 +589,22 @@ const styles = StyleSheet.create({
   word: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.regular,
-    color: colors.text,
+    color: colors.foreground,
     lineHeight: 28,
   },
   correctWord: {
-    backgroundColor: '#C8E6C9',
-    color: '#2E7D32',
+    backgroundColor: colors.quaternary,
+    color: colors.foreground,
     paddingHorizontal: 4,
     borderRadius: 4,
+    fontWeight: fontWeight.bold,
   },
   incorrectWord: {
-    backgroundColor: '#FFCDD2',
-    color: '#C62828',
+    backgroundColor: colors.secondary,
+    color: colors.foreground,
     paddingHorizontal: 4,
     borderRadius: 4,
+    fontWeight: fontWeight.bold,
   },
   microphoneContainer: {
     alignItems: 'center',
@@ -576,78 +614,91 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderWidth: 3,
+    borderColor: colors.foreground,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.large,
+    ...shadows.hard,
   },
   microphoneButtonActive: {
-    backgroundColor: '#E53935',
+    backgroundColor: colors.secondary,
   },
   microphoneButtonProcessing: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.tertiary,
   },
   microphoneLabel: {
     marginTop: spacing.md,
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
-    color: colors.textLight,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
   },
   transcriptCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.muted,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.border,
   },
   transcriptTitle: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.sm,
+    textTransform: 'lowercase',
   },
   transcriptText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.regular,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     lineHeight: 24,
   },
   scoreCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.accent,
+    ...shadows.card,
   },
   scoreTitle: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.sm,
+    textTransform: 'lowercase',
   },
   scoreValue: {
     fontSize: 64,
-    fontWeight: fontWeight.bold,
-    color: colors.primary,
+    fontWeight: fontWeight.extraBold,
+    color: colors.accent,
     marginVertical: spacing.sm,
   },
   scoreLabel: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.medium,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     marginBottom: spacing.md,
+    textTransform: 'lowercase',
   },
   xpContainer: {
-    backgroundColor: colors.primaryLight + '30',
+    backgroundColor: colors.accent,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full,
     marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   xpText: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.primary,
+    fontWeight: fontWeight.extraBold,
+    color: colors.accentForeground,
+    textTransform: 'lowercase',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -657,11 +708,14 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   tryAgainButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
   },
   changeDifficultyButton: {
     backgroundColor: colors.secondary,
@@ -669,49 +723,70 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: '#fff',
+    color: colors.accentForeground,
+    textTransform: 'lowercase',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
   },
   levelUpCard: {
-    backgroundColor: '#fff',
-    borderRadius: borderRadius.xl,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
     padding: spacing.xxl,
     alignItems: 'center',
     width: '100%',
     maxWidth: 400,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.card,
+    position: 'relative',
+  },
+  levelUpIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.tertiary,
+    borderWidth: 3,
+    borderColor: colors.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+    ...shadows.hard,
   },
   levelUpEmoji: {
-    fontSize: 80,
-    marginBottom: spacing.lg,
+    fontSize: 56,
   },
   levelUpTitle: {
     fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.md,
+    textTransform: 'lowercase',
   },
   levelUpText: {
     fontSize: fontSize.xl,
-    color: colors.primary,
-    fontWeight: fontWeight.bold,
+    color: colors.accent,
+    fontWeight: fontWeight.extraBold,
     marginBottom: spacing.xl,
   },
   levelUpButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   levelUpButtonText: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    color: '#fff',
+    color: colors.accentForeground,
+    textTransform: 'lowercase',
   },
 });
 

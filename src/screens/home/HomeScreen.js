@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../../../firebaseConfig';
@@ -17,13 +18,14 @@ import LearnModeScreen from '../learn/LearnModeScreen';
 const { width } = Dimensions.get('window');
 
 export const HomeScreen = ({ user, onLogout }) => {
-  const [currentScreen, setCurrentScreen] = useState('home'); // 'home' or 'learn'
+  const [currentScreen, setCurrentScreen] = useState('home');
   const [userData, setUserData] = useState({
     xp: 0,
     level: 1,
     awards: [],
     currentBook: null,
   });
+  const [pressAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (user) {
@@ -47,15 +49,44 @@ export const HomeScreen = ({ user, onLogout }) => {
   const levelInfo = getLevelInfo(userData.xp);
   const levelMessage = getLevelMessage(levelInfo.level);
 
-  console.log('Current screen:', currentScreen);
-
-  // Show Learn Mode screen if selected
   if (currentScreen === 'learn') {
-    console.log('Rendering LearnModeScreen');
     return (
       <LearnModeScreen onBack={() => setCurrentScreen('home')} user={user} />
     );
   }
+
+  const handlePressIn = () => {
+    Animated.spring(pressAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const buttonScale = pressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.96],
+  });
+
+  const buttonTranslateX = pressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 2],
+  });
+
+  const buttonTranslateY = pressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 2],
+  });
 
   return (
     <View style={styles.container}>
@@ -64,108 +95,124 @@ export const HomeScreen = ({ user, onLogout }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello, Reader!</Text>
-            <Text style={styles.email}>{user.email}</Text>
+        {/* Hero Header with Playful Geometric Design */}
+        <View style={styles.heroSection}>
+          {/* Decorative Yellow Circle */}
+          <View style={styles.decorativeCircle} />
+          
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>readrise.</Text>
+              <Text style={styles.subheading}>your reading journey starts here</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={onLogout} 
+              style={styles.logoutButton}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={onLogout} style={styles.logoutButton}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Level Progress Card */}
-        <Card style={styles.tierCard} variant="primary">
-          <View style={styles.tierHeader}>
-            <View>
-              <Text style={styles.tierLabel}>Your Level</Text>
-              <View style={styles.tierNameContainer}>
-                <Text style={styles.tierEmoji}>⭐</Text>
-                <Text style={styles.tierName}>Level {levelInfo.level}</Text>
+        {/* Level Progress Card - Sticker Style */}
+        <View style={styles.cardContainer}>
+          <Card style={styles.tierCard}>
+            {/* Floating Icon Circle */}
+            <View style={styles.floatingIcon}>
+              <Text style={styles.iconEmoji}>⭐</Text>
+            </View>
+            
+            <View style={styles.tierHeader}>
+              <View style={styles.tierInfo}>
+                <Text style={styles.tierLabel}>your level</Text>
+                <View style={styles.tierNameContainer}>
+                  <Text style={styles.tierName}>Level {levelInfo.level}</Text>
+                </View>
+                <Text style={styles.levelMessage}>{levelMessage}</Text>
               </View>
-              <Text style={styles.levelMessage}>{levelMessage}</Text>
+              <View style={styles.scoreContainer}>
+                <Text style={styles.scoreLabel}>total xp</Text>
+                <Text style={styles.scoreValue}>{userData.xp}</Text>
+              </View>
             </View>
-            <View style={styles.scoreContainer}>
-              <Text style={styles.scoreLabel}>Total XP</Text>
-              <Text style={styles.scoreValue}>{userData.xp}</Text>
-            </View>
-          </View>
 
-          <ProgressBar
-            progress={levelInfo.progressPercent}
-            height={16}
-            color={colors.primary}
-          />
+            <ProgressBar
+              progress={levelInfo.progressPercent}
+              height={20}
+              color={colors.accent}
+            />
 
-          <Text style={styles.nextTierText}>
-            {levelInfo.xpToNextLevel} XP to Level {levelInfo.level + 1}
-          </Text>
-        </Card>
+            <Text style={styles.nextTierText}>
+              {levelInfo.xpToNextLevel} xp to level {levelInfo.level + 1}
+            </Text>
+          </Card>
+        </View>
 
         {/* Continue Reading Card */}
         {userData.currentBook ? (
-          <Card style={styles.continueCard}>
-            <Text style={styles.sectionTitle}>📖 Continue Reading</Text>
-            <View style={styles.bookPreview}>
-              <View style={styles.bookCover}>
-                <Text style={styles.bookCoverEmoji}>📕</Text>
+          <View style={styles.cardContainer}>
+            <Card style={styles.continueCard}>
+              <Text style={styles.sectionTitle}>📖 continue reading</Text>
+              <View style={styles.bookPreview}>
+                <View style={styles.bookCover}>
+                  <Text style={styles.bookCoverEmoji}>📕</Text>
+                </View>
+                <View style={styles.bookInfo}>
+                  <Text style={styles.bookTitle}>{userData.currentBook.title}</Text>
+                  <Text style={styles.bookProgress}>
+                    chapter {userData.currentBook.currentChapter} of {userData.currentBook.totalChapters}
+                  </Text>
+                  <ProgressBar
+                    progress={userData.currentBook.currentChapter / userData.currentBook.totalChapters}
+                    height={8}
+                    color={colors.secondary}
+                  />
+                </View>
               </View>
-              <View style={styles.bookInfo}>
-                <Text style={styles.bookTitle}>{userData.currentBook.title}</Text>
-                <Text style={styles.bookProgress}>
-                  Chapter {userData.currentBook.currentChapter} of {userData.currentBook.totalChapters}
-                </Text>
-                <ProgressBar
-                  progress={userData.currentBook.currentChapter / userData.currentBook.totalChapters}
-                  height={6}
-                  color={colors.secondary}
-                />
-              </View>
-            </View>
-            <Button
-              title="Continue Reading"
-              variant="secondary"
-              size="medium"
-              onPress={() => {}}
-              style={styles.continueButton}
-            />
-          </Card>
+              <TouchableOpacity
+                style={styles.pillButton}
+                onPress={() => {}}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.pillButtonText}>continue reading</Text>
+              </TouchableOpacity>
+            </Card>
+          </View>
         ) : (
-          <Card style={styles.continueCard}>
-            <Text style={styles.sectionTitle}>🎯 Start Your Journey</Text>
-            <Text style={styles.emptyText}>
-              No book in progress yet.{'\n'}Browse the library to get started!
-            </Text>
-            <Button
-              title="Browse Books"
-              variant="primary"
-              size="medium"
-              onPress={() => {}}
-              style={styles.continueButton}
-            />
-          </Card>
+          <View style={styles.cardContainer}>
+            <Card style={styles.continueCard}>
+              <Text style={styles.sectionTitle}>🎯 start your journey</Text>
+              <Text style={styles.emptyText}>
+                no book in progress yet.{'\n'}browse the library to get started!
+              </Text>
+              <TouchableOpacity
+                style={[styles.pillButton, styles.pillButtonPrimary]}
+                onPress={() => {}}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.pillButtonText, styles.pillButtonTextPrimary]}>browse books</Text>
+              </TouchableOpacity>
+            </Card>
+          </View>
         )}
 
-        {/* Mode Selection */}
+        {/* Mode Selection - Playful Cards */}
         <View style={styles.modesSection}>
-          <Text style={styles.sectionTitle}>🎮 Choose Your Mode</Text>
+          <Text style={styles.sectionTitle}>🎮 choose your mode</Text>
           <View style={styles.modesGrid}>
             <ModeCard
               emoji="📚"
-              title="Learn Mode"
-              description="Practice reading with helpful feedback"
-              color={colors.primary}
-              onPress={() => {
-                console.log('Learn Mode clicked!');
-                setCurrentScreen('learn');
-              }}
+              title="learn mode"
+              description="practice reading with helpful feedback"
+              color={colors.accent}
+              onPress={() => setCurrentScreen('learn')}
             />
             <ModeCard
               emoji="⚔️"
-              title="Challenge Mode"
-              description="Test your skills and earn rewards"
-              color={colors.accent}
+              title="challenge mode"
+              description="test your skills and earn rewards"
+              color={colors.tertiary}
               onPress={() => {}}
               locked={levelInfo.level < 5}
             />
@@ -174,44 +221,49 @@ export const HomeScreen = ({ user, onLogout }) => {
 
         {/* Awards Preview */}
         {userData.awards.length > 0 && (
-          <Card style={styles.awardsCard}>
-            <View style={styles.awardsHeader}>
-              <Text style={styles.sectionTitle}>🏆 Recent Awards</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.awardsGrid}>
-              {userData.awards.slice(0, 4).map((award, index) => (
-                <View key={index} style={styles.awardBadge}>
-                  <Text style={styles.awardEmoji}>{award.emoji || '🏅'}</Text>
-                </View>
-              ))}
-              {userData.awards.length > 4 && (
-                <View style={styles.awardBadge}>
-                  <Text style={styles.awardMore}>+{userData.awards.length - 4}</Text>
-                </View>
-              )}
-            </View>
-          </Card>
+          <View style={styles.cardContainer}>
+            <Card style={styles.awardsCard}>
+              <View style={styles.awardsHeader}>
+                <Text style={styles.sectionTitle}>🏆 recent awards</Text>
+                <TouchableOpacity>
+                  <Text style={styles.seeAllText}>see all</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.awardsGrid}>
+                {userData.awards.slice(0, 4).map((award, index) => (
+                  <View key={index} style={styles.awardBadge}>
+                    <Text style={styles.awardEmoji}>{award.emoji || '🏅'}</Text>
+                  </View>
+                ))}
+                {userData.awards.length > 4 && (
+                  <View style={styles.awardBadge}>
+                    <Text style={styles.awardMore}>+{userData.awards.length - 4}</Text>
+                  </View>
+                )}
+              </View>
+            </Card>
+          </View>
         )}
 
-        {/* Quick Stats */}
+        {/* Quick Stats - Geometric Style */}
         <View style={styles.statsGrid}>
           <StatCard
             emoji="🔥"
             value="0"
-            label="Day Streak"
+            label="day streak"
+            color={colors.secondary}
           />
           <StatCard
             emoji="📚"
             value="0"
-            label="Books Read"
+            label="books read"
+            color={colors.tertiary}
           />
           <StatCard
             emoji="⭐"
             value="0"
-            label="Chapters"
+            label="chapters"
+            color={colors.quaternary}
           />
         </View>
       </ScrollView>
@@ -219,27 +271,54 @@ export const HomeScreen = ({ user, onLogout }) => {
   );
 };
 
-const ModeCard = ({ emoji, title, description, color, onPress, locked = false }) => (
-  <TouchableOpacity
-    style={[styles.modeCard, { borderColor: color }]}
-    onPress={onPress}
-    disabled={locked}
-    activeOpacity={0.7}
-  >
-    {locked && (
-      <View style={styles.lockedOverlay}>
-        <Text style={styles.lockIcon}>🔒</Text>
+const ModeCard = ({ emoji, title, description, color, onPress, locked = false }) => {
+  const [pressed, setPressed] = React.useState(false);
+  
+  return (
+    <TouchableOpacity
+      style={[
+        styles.modeCard,
+        { borderColor: color },
+        locked && styles.modeCardLocked,
+        pressed && !locked && styles.modeCardPressed,
+      ]}
+      onPress={onPress}
+      disabled={locked}
+      activeOpacity={0.9}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+    >
+      <View style={[
+        styles.modeIconCircle, 
+        { backgroundColor: color },
+        locked && styles.modeIconCircleLocked,
+      ]}>
+        {locked ? (
+          <View style={styles.lockIconCircle}>
+            <Text style={styles.lockIcon}>🔒</Text>
+          </View>
+        ) : (
+          <Text style={styles.modeEmoji}>{emoji}</Text>
+        )}
       </View>
-    )}
-    <Text style={styles.modeEmoji}>{emoji}</Text>
-    <Text style={styles.modeTitle}>{title}</Text>
-    <Text style={styles.modeDescription}>{description}</Text>
-  </TouchableOpacity>
-);
+      <Text style={[styles.modeTitle, locked && styles.modeTitleLocked]}>{title}</Text>
+      <Text style={styles.modeDescription}>
+        {locked ? 'unlock at level 5' : description}
+      </Text>
+      {locked && (
+        <View style={styles.lockBadge}>
+          <Text style={styles.lockBadgeText}>locked</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
 
-const StatCard = ({ emoji, value, label }) => (
+const StatCard = ({ emoji, value, label, color }) => (
   <Card style={styles.statCard} padding="small">
-    <Text style={styles.statEmoji}>{emoji}</Text>
+    <View style={[styles.statIconCircle, { backgroundColor: color }]}>
+      <Text style={styles.statEmoji}>{emoji}</Text>
+    </View>
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </Card>
@@ -256,101 +335,169 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing.xxl,
   },
+  
+  // Hero Section
+  heroSection: {
+    position: 'relative',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl * 1.5,
+    paddingBottom: spacing.lg,
+    overflow: 'hidden',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: colors.tertiary,
+    opacity: 0.15,
+    top: -50,
+    left: -50,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl * 1.5,
-    paddingBottom: spacing.lg,
+    zIndex: 1,
   },
-  greeting: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+  titleContainer: {
+    flex: 1,
   },
-  email: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
+  title: {
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    letterSpacing: -1,
+    marginBottom: spacing.xs,
+  },
+  subheading: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.regular,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
   },
   logoutButton: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    ...shadows.small,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   logoutText: {
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    color: colors.error,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
   },
 
-  // Tier Card
-  tierCard: {
-    marginHorizontal: spacing.xl,
+  // Card Container
+  cardContainer: {
+    paddingHorizontal: spacing.xl,
     marginBottom: spacing.lg,
+  },
+
+  // Tier Card - Sticker Style
+  tierCard: {
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+    ...shadows.card,
+    position: 'relative',
+  },
+  floatingIcon: {
+    position: 'absolute',
+    top: -20,
+    right: spacing.lg,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: colors.tertiary,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    ...shadows.hard,
+  },
+  iconEmoji: {
+    fontSize: 24,
   },
   tierHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: spacing.md,
+    marginTop: spacing.sm,
+  },
+  tierInfo: {
+    flex: 1,
   },
   tierLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    color: colors.mutedForeground,
     marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1,
   },
   tierNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  tierEmoji: {
-    fontSize: 28,
-    marginRight: spacing.sm,
+    marginBottom: spacing.xs,
   },
   tierName: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
   },
   levelMessage: {
     fontSize: fontSize.sm,
-    color: colors.textLight,
-    marginTop: spacing.xs,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
   },
   scoreContainer: {
     alignItems: 'flex-end',
   },
   scoreLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    color: colors.mutedForeground,
     marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1,
   },
   scoreValue: {
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.primary,
+    fontWeight: fontWeight.extraBold,
+    color: colors.accent,
   },
   nextTierText: {
     fontSize: fontSize.xs,
-    color: colors.textMuted,
+    color: colors.mutedForeground,
     marginTop: spacing.sm,
     textAlign: 'center',
+    textTransform: 'lowercase',
   },
 
   // Continue Reading Card
   continueCard: {
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+    ...shadows.card,
   },
   sectionTitle: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.md,
+    textTransform: 'lowercase',
   },
   bookPreview: {
     flexDirection: 'row',
@@ -359,11 +506,14 @@ const styles = StyleSheet.create({
   bookCover: {
     width: 80,
     height: 100,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.tertiary,
     borderRadius: borderRadius.md,
+    borderWidth: 2,
+    borderColor: colors.foreground,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
+    ...shadows.hard,
   },
   bookCoverEmoji: {
     fontSize: 40,
@@ -375,23 +525,49 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: colors.text,
+    color: colors.foreground,
     marginBottom: spacing.xs,
   },
   bookProgress: {
     fontSize: fontSize.sm,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     marginBottom: spacing.sm,
+    textTransform: 'lowercase',
   },
   emptyText: {
     fontSize: fontSize.md,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     textAlign: 'center',
     marginVertical: spacing.lg,
     lineHeight: 24,
+    textTransform: 'lowercase',
   },
-  continueButton: {
+
+  // Pill Buttons
+  pillButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.sm,
+  },
+  pillButtonPrimary: {
+    backgroundColor: colors.accent,
+    borderColor: colors.foreground,
+    ...shadows.hard,
+  },
+  pillButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
+  },
+  pillButtonTextPrimary: {
+    color: colors.accentForeground,
   },
 
   // Modes Section
@@ -405,44 +581,99 @@ const styles = StyleSheet.create({
   },
   modeCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     borderWidth: 2,
     alignItems: 'center',
-    ...shadows.medium,
+    ...shadows.card,
+    position: 'relative',
   },
-  lockedOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: borderRadius.lg,
+  modeCardLocked: {
+    opacity: 0.7,
+    borderColor: colors.border,
+  },
+  modeCardPressed: {
+    transform: [{ scale: 0.98 }],
+    ...shadows.hardPress,
+  },
+  modeIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.sm,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
+  },
+  modeIconCircleLocked: {
+    backgroundColor: colors.muted,
+    borderColor: colors.border,
+  },
+  lockIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.hard,
   },
   lockIcon: {
-    fontSize: 32,
+    fontSize: 20,
   },
   modeEmoji: {
-    fontSize: 48,
-    marginBottom: spacing.sm,
+    fontSize: 32,
   },
   modeTitle: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.xs,
     textAlign: 'center',
+    textTransform: 'lowercase',
   },
   modeDescription: {
     fontSize: fontSize.xs,
-    color: colors.textLight,
+    color: colors.mutedForeground,
     textAlign: 'center',
+    textTransform: 'lowercase',
+  },
+  modeTitleLocked: {
+    opacity: 0.6,
+  },
+  lockBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: colors.tertiary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
+  },
+  lockBadgeText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Awards
   awardsCard: {
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+    ...shadows.card,
   },
   awardsHeader: {
     flexDirection: 'row',
@@ -452,28 +683,33 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    color: colors.primary,
+    fontWeight: fontWeight.bold,
+    color: colors.accent,
+    textTransform: 'lowercase',
   },
   awardsGrid: {
     flexDirection: 'row',
     gap: spacing.md,
+    flexWrap: 'wrap',
   },
   awardBadge: {
     width: 60,
     height: 60,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.quaternary,
     borderRadius: borderRadius.md,
+    borderWidth: 2,
+    borderColor: colors.foreground,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.hard,
   },
   awardEmoji: {
     fontSize: 32,
   },
   awardMore: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    color: colors.textMuted,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
   },
 
   // Stats Grid
@@ -485,21 +721,39 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+    padding: spacing.md,
+    ...shadows.card,
+  },
+  statIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   statEmoji: {
-    fontSize: 28,
-    marginBottom: spacing.xs,
+    fontSize: 24,
   },
   statValue: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginBottom: spacing.xs,
   },
   statLabel: {
     fontSize: fontSize.xs,
-    color: colors.textMuted,
+    color: colors.mutedForeground,
     textAlign: 'center',
+    textTransform: 'lowercase',
+    fontWeight: fontWeight.medium,
   },
 });
 

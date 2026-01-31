@@ -1,47 +1,58 @@
-// ReadRise Theme
-// Design Philosophy: Warm, energetic, youthful. Soft purples, warm oranges, sky blues, creamy whites.
+// ReadRise Theme - Playful Geometric Design System
+// Design Philosophy: Playful, tactile, optimistic. Stable grid, wild decoration.
 
 export const colors = {
-  // Primary palette
-  primary: '#8B7EC8',        // Soft purple
-  primaryLight: '#A599D9',
-  primaryDark: '#6B5FA8',
+  // Playful Geometric Palette
+  background: '#FFFDF5',     // Warm Cream/Off-White (Paper feel)
+  foreground: '#1E293B',     // Slate 800 (Softer than black)
+  muted: '#F1F5F9',          // Slate 100
+  mutedForeground: '#64748B', // Slate 500
+  accent: '#8B5CF6',         // Vivid Violet (Primary Brand)
+  accentForeground: '#FFFFFF', // White
+  secondary: '#F472B6',      // Hot Pink (Playful pop)
+  tertiary: '#FBBF24',       // Amber/Yellow (Optimism)
+  quaternary: '#34D399',     // Emerald/Mint (Freshness)
+  border: '#E2E8F0',         // Slate 200
+  input: '#FFFFFF',           // White
+  card: '#FFFFFF',            // White
+  ring: '#8B5CF6',            // Violet Focus
 
-  secondary: '#FF9B71',      // Warm orange
-  secondaryLight: '#FFB08F',
-  secondaryDark: '#E8825A',
-
-  accent: '#6BB6FF',         // Sky blue
-  accentLight: '#8FC7FF',
-  accentDark: '#4A9FE8',
+  // Legacy compatibility (mapped to new palette)
+  primary: '#8B5CF6',         // Maps to accent
+  primaryLight: '#A78BFA',
+  primaryDark: '#7C3AED',
+  secondary: '#F472B6',      // Hot Pink
+  secondaryLight: '#F9A8D4',
+  secondaryDark: '#EC4899',
+  accent: '#8B5CF6',         // Same as primary
+  accentLight: '#A78BFA',
+  accentDark: '#7C3AED',
 
   // Neutral palette
-  background: '#FFF8F0',     // Creamy white
   surface: '#FFFFFF',
-  cream: '#FFF5E9',
+  cream: '#FFFDF5',
 
-  // Text colors
-  text: '#2C2C2C',
-  textLight: '#666666',
-  textMuted: '#999999',
+  // Text colors (mapped to new system)
+  text: '#1E293B',            // foreground
+  textLight: '#64748B',       // mutedForeground
+  textMuted: '#94A3B8',       // Slate 400
 
-  // Tier colors
-  seedling: '#7ED957',       // 🌱 Bright green
-  sprout: '#5CB85C',         // 🌿 Forest green
-  tree: '#8B5A3C',           // 🌳 Wood brown
-  grove: '#2E7D32',          // 🌲 Deep green
-  starReader: '#FFD700',     // ⭐ Gold
+  // Tier colors (keeping for compatibility)
+  seedling: '#34D399',        // Using quaternary
+  sprout: '#34D399',
+  tree: '#FBBF24',            // Using tertiary
+  grove: '#8B5CF6',           // Using accent
+  starReader: '#FBBF24',      // Using tertiary
 
   // Status colors
-  success: '#4CAF50',
-  warning: '#FF9800',
-  error: '#FF5252',
-  info: '#2196F3',
+  success: '#34D399',
+  warning: '#FBBF24',
+  error: '#EF4444',
+  info: '#8B5CF6',
 
   // UI elements
-  border: '#E0E0E0',
-  shadow: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.5)',
+  shadow: '#1E293B',          // foreground for hard shadows
+  overlay: 'rgba(30, 41, 59, 0.5)',
 };
 
 export const spacing = {
@@ -55,9 +66,9 @@ export const spacing = {
 
 export const borderRadius = {
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
+  md: 16,
+  lg: 24,
+  xl: 32,
   full: 9999,
 };
 
@@ -78,7 +89,42 @@ export const fontWeight = {
   extraBold: '800',
 };
 
+// Playful Geometric Hard Shadows (approximated for React Native)
+// Note: React Native doesn't support true hard shadows, so we use minimal blur
 export const shadows = {
+  // Hard shadow - 4px 4px 0px (The "Pop" Shadow)
+  hard: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0, // Minimal blur for hard edge
+    elevation: 4,
+  },
+  // Hard shadow hover - 6px 6px 0px (Lift effect)
+  hardLift: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 6,
+  },
+  // Hard shadow active - 2px 2px 0px (Press effect)
+  hardPress: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  // Soft hard shadow for cards - 8px 8px 0px
+  card: {
+    shadowColor: colors.border,
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 8,
+  },
+  // Legacy shadows (for compatibility)
   small: {
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
