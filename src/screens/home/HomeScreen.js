@@ -58,7 +58,7 @@ export const HomeScreen = ({ user, onLogout }) => {
   if (currentScreen === 'challenge') {
     console.log('Rendering ChallengeModeScreen');
     return (
-      <ChallengeModeScreen onBack={() => setCurrentScreen('home')} />
+      <ChallengeModeScreen onBack={() => setCurrentScreen('home')} user={user} />
     );
   }
 
