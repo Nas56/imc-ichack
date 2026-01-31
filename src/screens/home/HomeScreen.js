@@ -11,10 +11,12 @@ import { ref, onValue } from 'firebase/database';
 import { db } from '../../../firebaseConfig';
 import { colors, spacing, fontSize, fontWeight, borderRadius, shadows, getTierByScore, getTierProgress } from '../../theme';
 import { Button, Card, ProgressBar } from '../../components';
+import LearnModeScreen from '../learn/LearnModeScreen';
 
 const { width } = Dimensions.get('window');
 
 export const HomeScreen = ({ user, onLogout }) => {
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home' or 'learn'
   const [userData, setUserData] = useState({
     totalScore: 0,
     currentTier: 'Seedling',
@@ -43,6 +45,16 @@ export const HomeScreen = ({ user, onLogout }) => {
 
   const currentTier = getTierByScore(userData.totalScore);
   const { progress, nextTierScore } = getTierProgress(userData.totalScore);
+
+  console.log('Current screen:', currentScreen);
+
+  // Show Learn Mode screen if selected
+  if (currentScreen === 'learn') {
+    console.log('Rendering LearnModeScreen');
+    return (
+      <LearnModeScreen onBack={() => setCurrentScreen('home')} />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -144,7 +156,10 @@ export const HomeScreen = ({ user, onLogout }) => {
               title="Learn Mode"
               description="Practice reading with helpful feedback"
               color={colors.primary}
-              onPress={() => {}}
+              onPress={() => {
+                console.log('Learn Mode clicked!');
+                setCurrentScreen('learn');
+              }}
             />
             <ModeCard
               emoji="⚔️"
