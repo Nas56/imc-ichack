@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  Animated,
 } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../../../firebaseConfig';
@@ -14,18 +13,18 @@ import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '..
 import { Button, Card, ProgressBar } from '../../components';
 import { getLevelInfo, getLevelMessage } from '../../services/levelingService';
 import LearnModeScreen from '../learn/LearnModeScreen';
+import ChallengeModeScreen from '../challenge/ChallengeModeScreen';
 
 const { width } = Dimensions.get('window');
 
 export const HomeScreen = ({ user, onLogout }) => {
-  const [currentScreen, setCurrentScreen] = useState('home');
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'learn', or 'challenge'
   const [userData, setUserData] = useState({
     xp: 0,
     level: 1,
     awards: [],
     currentBook: null,
   });
-  const [pressAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (user) {
@@ -55,38 +54,13 @@ export const HomeScreen = ({ user, onLogout }) => {
     );
   }
 
-  const handlePressIn = () => {
-    Animated.spring(pressAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 10,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(pressAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 10,
-    }).start();
-  };
-
-  const buttonScale = pressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.96],
-  });
-
-  const buttonTranslateX = pressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 2],
-  });
-
-  const buttonTranslateY = pressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 2],
-  });
+  // Show Challenge Mode screen if selected
+  if (currentScreen === 'challenge') {
+    console.log('Rendering ChallengeModeScreen');
+    return (
+      <ChallengeModeScreen onBack={() => setCurrentScreen('home')} />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -213,7 +187,10 @@ export const HomeScreen = ({ user, onLogout }) => {
               title="challenge mode"
               description="test your skills and earn rewards"
               color={colors.tertiary}
-              onPress={() => {}}
+              onPress={() => {
+                console.log('Challenge Mode clicked!');
+                setCurrentScreen('challenge');
+              }}
               locked={levelInfo.level < 5}
             />
           </View>
