@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  SafeAreaView,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -254,13 +255,15 @@ const LearnModeScreen = ({ onBack, user }) => {
   if (!difficulty) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={24} color={colors.foreground} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>select difficulty</Text>
-          <View style={styles.placeholder} />
-        </View>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>select difficulty</Text>
+            <View style={styles.placeholder} />
+          </View>
+        </SafeAreaView>
 
         <ScrollView
           style={styles.content}
@@ -320,18 +323,20 @@ const LearnModeScreen = ({ onBack, user }) => {
   // Main Learning Screen
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>learn mode</Text>
-          <Text style={styles.headerSubtitle}>
-            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-          </Text>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>learn mode</Text>
+            <Text style={styles.headerSubtitle}>
+              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+            </Text>
+          </View>
+          <View style={styles.placeholder} />
         </View>
-        <View style={styles.placeholder} />
-      </View>
+      </SafeAreaView>
 
       <ScrollView
         style={styles.content}
@@ -477,12 +482,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  safeArea: {
+    backgroundColor: colors.card,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
     backgroundColor: colors.card,
     borderBottomWidth: 2,
@@ -516,22 +524,22 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   difficultyContainer: {
-    padding: spacing.xl,
+    padding: spacing.lg,
     alignItems: 'stretch',
   },
   difficultyPrompt: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.extraBold,
     color: colors.foreground,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     textTransform: 'lowercase',
   },
   difficultyCard: {
     backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.foreground,
@@ -547,31 +555,31 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
   },
   difficultyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     borderWidth: 2,
     borderColor: colors.foreground,
     ...shadows.hard,
   },
   difficultyEmoji: {
-    fontSize: 48,
+    fontSize: 32,
   },
   difficultyTitle: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.extraBold,
     color: colors.foreground,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
     textTransform: 'lowercase',
   },
   difficultyDescription: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.mutedForeground,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
     textTransform: 'lowercase',
   },
   instructionCard: {
