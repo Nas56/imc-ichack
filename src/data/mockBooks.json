@@ -1,0 +1,98 @@
+[
+  {
+    "id": "book-1",
+    "title": "The Magical Garden",
+    "coverUrl": "📗",
+    "difficulty": "easy",
+    "genreEmoji": "🌸",
+    "description": "A young girl discovers a secret garden where flowers can talk and grant wishes.",
+    "chapters": [
+      {
+        "id": "chapter-1-1",
+        "bookId": "book-1",
+        "chapterNumber": 1,
+        "title": "The Hidden Gate",
+        "textContent": "Lily walked through her grandmother's old garden. Behind the roses, she saw something special. A small wooden gate was hidden by leaves. The gate was painted blue and had tiny flowers carved into it. Lily pushed it open slowly. What would she find inside?",
+        "estimatedMinutes": 2
+      },
+      {
+        "id": "chapter-1-2",
+        "bookId": "book-1",
+        "chapterNumber": 2,
+        "title": "Talking Flowers",
+        "textContent": "Inside the garden, Lily heard soft voices. She looked around but saw no one. Then a daisy spoke! 'Hello, Lily,' it said with a smile. 'We've been waiting for you.' Lily couldn't believe her ears. The flowers could talk! A rose giggled and a sunflower waved.",
+        "estimatedMinutes": 2
+      },
+      {
+        "id": "chapter-1-3",
+        "bookId": "book-1",
+        "chapterNumber": 3,
+        "title": "The First Wish",
+        "textContent": "The wise old oak tree told Lily about the garden's magic. 'Each person gets three wishes,' the tree explained. 'But choose carefully. True wishes come from the heart.' Lily thought for a long time. What did she really want? She closed her eyes and made her first wish.",
+        "estimatedMinutes": 3
+      }
+    ]
+  },
+  {
+    "id": "book-2",
+    "title": "Space Explorers",
+    "coverUrl": "🚀",
+    "difficulty": "medium",
+    "genreEmoji": "🌌",
+    "description": "Join Captain Maya and her crew as they journey through the galaxy on a mission to discover new worlds.",
+    "chapters": [
+      {
+        "id": "chapter-2-1",
+        "bookId": "book-2",
+        "chapterNumber": 1,
+        "title": "Liftoff!",
+        "textContent": "Captain Maya checked all the systems one last time. 'Is everyone ready?' she asked her crew. The engines began to rumble. The countdown started: ten, nine, eight. The whole ship shook with power. Seven, six, five. Maya's heart beat faster. Four, three, two, one. Liftoff! The spacecraft rose into the sky, leaving Earth behind.",
+        "estimatedMinutes": 3
+      },
+      {
+        "id": "chapter-2-2",
+        "bookId": "book-2",
+        "chapterNumber": 2,
+        "title": "Strange Signals",
+        "textContent": "Three days into the journey, the ship's computer detected something unusual. Beep. Beep. Beep. A signal was coming from a nearby asteroid. 'It sounds like a message,' said Tom, the communications officer. The crew gathered around the screen. The signal repeated in a pattern. Was someone trying to communicate with them?",
+        "estimatedMinutes": 3
+      }
+    ]
+  },
+  {
+    "id": "book-3",
+    "title": "Mystery at Moonlight Manor",
+    "coverUrl": "🏰",
+    "difficulty": "medium",
+    "genreEmoji": "🔍",
+    "description": "When strange things start happening at the old manor, detective Alex must solve the mystery before it's too late.",
+    "chapters": [
+      {
+        "id": "chapter-3-1",
+        "bookId": "book-3",
+        "chapterNumber": 1,
+        "title": "The Strange Invitation",
+        "textContent": "Alex found an envelope on the doorstep. It was made of thick, creamy paper with a red wax seal. The invitation inside was handwritten in elegant script. 'You are invited to Moonlight Manor for a weekend mystery event. Come if you dare to solve the unsolvable.' It was signed with just the letter M.",
+        "estimatedMinutes": 3
+      }
+    ]
+  },
+  {
+    "id": "book-4",
+    "title": "The Dragon's Secret",
+    "coverUrl": "🐉",
+    "difficulty": "hard",
+    "genreEmoji": "⚔️",
+    "description": "In a kingdom where dragons are feared, one brave knight discovers that not all dragons are what they seem.",
+    "chapters": [
+      {
+        "id": "chapter-4-1",
+        "bookId": "book-4",
+        "chapterNumber": 1,
+        "title": "The Mountain Cave",
+        "textContent": "Sir Edmund climbed the treacherous mountain path, his armor gleaming in the afternoon sun. The villagers had spoken of a fearsome dragon dwelling in the highest caves. For years, smoke had risen from the mountain peak, and livestock had mysteriously disappeared. As the kingdom's bravest knight, Edmund had volunteered to face the beast. But as he approached the cave entrance, he heard something unexpected: the sound of gentle weeping.",
+        "estimatedMinutes": 4
+      }
+    ]
+  }
+]
