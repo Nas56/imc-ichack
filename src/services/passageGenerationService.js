@@ -85,7 +85,7 @@ Return ONLY the passage text, no titles, no explanations, no metadata.
 The passage should be complete and ready to read aloud.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-sonnet-20240229',
       max_tokens: 300,
       temperature: 1.0, // More creative/varied passages
       messages: [

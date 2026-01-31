@@ -143,7 +143,7 @@ export const HomeScreen = ({ user, onLogout }) => {
                 console.log('Challenge Mode clicked!');
                 setCurrentScreen('challenge');
               }}
-              locked={levelInfo.level < 5}
+              locked={false}
             />
           </View>
         </View>
