@@ -55,7 +55,7 @@ export default function App() {
     if (!user) return;
 
     try {
-      // Save onboarding data to database
+      // Save onboarding data to database with new leveling system
       const userRef = ref(db, 'users/' + user.uid);
       await set(userRef, {
         email: user.email,
@@ -65,8 +65,8 @@ export default function App() {
         ageRange: userData.ageRange,
         readingLevel: userData.readingLevel,
         goals: userData.goals,
-        totalScore: 0,
-        currentTier: 'Seedling',
+        xp: 0,
+        level: 1,
         awards: [],
       });
 

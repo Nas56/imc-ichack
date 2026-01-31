@@ -7,22 +7,29 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import { ref, update, get } from 'firebase/database';
+import { db } from '../../../firebaseConfig';
 import { transcribeAudio } from '../../services/deepgramService';
+import { calculateXP, addXP, getLevelInfo } from '../../services/levelingService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
+import passagesData from '../../data/passages.json';
 
-// Hardcoded text extract for now
-const BOOK_EXTRACT = "The sun was setting behind the mountains, casting long shadows across the valley. Birds chirped their evening songs as the cool breeze rustled through the trees. It was a peaceful moment, one that reminded me of home.";
-
-const LearnModeScreen = ({ onBack }) => {
+const LearnModeScreen = ({ onBack, user }) => {
+  const [difficulty, setDifficulty] = useState(null);
+  const [currentPassage, setCurrentPassage] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [wordStates, setWordStates] = useState([]);
   const [score, setScore] = useState(null);
+  const [earnedXP, setEarnedXP] = useState(0);
   const [hasFinished, setHasFinished] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpInfo, setLevelUpInfo] = useState(null);
 
   const recordingRef = useRef(null);
   const audioPermissionRef = useRef(false);
@@ -30,7 +37,6 @@ const LearnModeScreen = ({ onBack }) => {
   useEffect(() => {
     requestAudioPermission();
     return () => {
-      // Cleanup on unmount
       if (recordingRef.current) {
         stopRecording();
       }
@@ -52,6 +58,20 @@ const LearnModeScreen = ({ onBack }) => {
     }
   };
 
+  const selectDifficulty = (selectedDifficulty) => {
+    setDifficulty(selectedDifficulty);
+    loadRandomPassage(selectedDifficulty);
+  };
+
+  const loadRandomPassage = (diff) => {
+    const passages = passagesData[diff];
+    if (passages && passages.length > 0) {
+      const randomIndex = Math.floor(Math.random() * passages.length);
+      setCurrentPassage(passages[randomIndex]);
+      resetSession();
+    }
+  };
+
   const startRecording = async () => {
     try {
       if (!audioPermissionRef.current) {
@@ -59,13 +79,11 @@ const LearnModeScreen = ({ onBack }) => {
         if (!audioPermissionRef.current) return;
       }
 
-      // Configure audio mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
 
-      // Start recording
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
@@ -75,6 +93,7 @@ const LearnModeScreen = ({ onBack }) => {
       setTranscribedText('');
       setWordStates([]);
       setScore(null);
+      setEarnedXP(0);
       setHasFinished(false);
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -93,17 +112,13 @@ const LearnModeScreen = ({ onBack }) => {
       const uri = recordingRef.current.getURI();
       recordingRef.current = null;
 
-      // Reset audio mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
       });
 
       if (uri) {
-        // Transcribe the audio
         const transcript = await transcribeAudio(uri);
         setTranscribedText(transcript);
-
-        // Compare with the extract
         compareTexts(transcript);
       }
 
@@ -115,23 +130,22 @@ const LearnModeScreen = ({ onBack }) => {
     }
   };
 
-  const compareTexts = (transcript) => {
-    // Normalize texts
+  const compareTexts = async (transcript) => {
+    if (!currentPassage) return;
+
     const normalizeText = (text) =>
       text.toLowerCase()
         .replace(/[.,!?;:]/g, '')
         .split(/\s+/)
         .filter(word => word.length > 0);
 
-    const extractWords = normalizeText(BOOK_EXTRACT);
+    const extractWords = normalizeText(currentPassage.text);
     const transcriptWords = normalizeText(transcript);
 
-    // Create word states with comparison
     const states = extractWords.map((word, index) => {
-      // Check if the word was said correctly
       const wasSpoken = transcriptWords.includes(word);
       return {
-        word: BOOK_EXTRACT.split(/\s+/)[index], // Keep original formatting
+        word: currentPassage.text.split(/\s+/)[index],
         isCorrect: wasSpoken,
         index,
       };
@@ -139,22 +153,61 @@ const LearnModeScreen = ({ onBack }) => {
 
     setWordStates(states);
 
-    // Calculate score
     const correctWords = states.filter(state => state.isCorrect).length;
     const totalWords = states.length;
     const percentage = Math.round((correctWords / totalWords) * 100);
 
     setScore(percentage);
+
+    // Calculate XP earned
+    const xp = calculateXP(difficulty, percentage);
+    setEarnedXP(xp);
+
+    // Update user's XP in database
+    if (user) {
+      await updateUserXP(xp);
+    }
+
     setHasFinished(true);
+  };
+
+  const updateUserXP = async (xp) => {
+    try {
+      const userRef = ref(db, 'users/' + user.uid);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      const currentXP = userData?.xp || 0;
+      const { newTotalXP, oldLevel, newLevel, leveledUp } = addXP(currentXP, xp);
+
+      // Update database
+      await update(userRef, {
+        xp: newTotalXP,
+        level: newLevel,
+      });
+
+      // Show level up modal if leveled up
+      if (leveledUp) {
+        setLevelUpInfo({ oldLevel, newLevel });
+        setShowLevelUp(true);
+      }
+    } catch (error) {
+      console.error('Error updating XP:', error);
+    }
   };
 
   const resetSession = () => {
     setTranscribedText('');
     setWordStates([]);
     setScore(null);
+    setEarnedXP(0);
     setHasFinished(false);
     setIsRecording(false);
     setIsProcessing(false);
+  };
+
+  const tryNewPassage = () => {
+    loadRandomPassage(difficulty);
   };
 
   const renderWord = (wordState, index) => {
@@ -173,14 +226,77 @@ const LearnModeScreen = ({ onBack }) => {
     );
   };
 
+  // Difficulty Selection Screen
+  if (!difficulty) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Select Difficulty</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.difficultyContainer}
+        >
+          <Text style={styles.difficultyPrompt}>Choose your challenge level:</Text>
+
+          <TouchableOpacity
+            style={[styles.difficultyCard, styles.easyCard]}
+            onPress={() => selectDifficulty('easy')}
+          >
+            <Text style={styles.difficultyEmoji}>🌱</Text>
+            <Text style={styles.difficultyTitle}>Easy</Text>
+            <Text style={styles.difficultyDescription}>
+              Short passages with simple words{'\n'}
+              ~10 seconds • +{calculateXP('easy', 100)} XP max
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.difficultyCard, styles.mediumCard]}
+            onPress={() => selectDifficulty('medium')}
+          >
+            <Text style={styles.difficultyEmoji}>🔥</Text>
+            <Text style={styles.difficultyTitle}>Medium</Text>
+            <Text style={styles.difficultyDescription}>
+              Moderate length with varied vocabulary{'\n'}
+              ~20 seconds • +{calculateXP('medium', 100)} XP max
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.difficultyCard, styles.hardCard]}
+            onPress={() => selectDifficulty('hard')}
+          >
+            <Text style={styles.difficultyEmoji}>💎</Text>
+            <Text style={styles.difficultyTitle}>Hard</Text>
+            <Text style={styles.difficultyDescription}>
+              Complex passages with advanced vocabulary{'\n'}
+              ~30 seconds • +{calculateXP('hard', 100)} XP max
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Main Learning Screen
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Learn Mode</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Learn Mode</Text>
+          <Text style={styles.headerSubtitle}>
+            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+          </Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
@@ -188,7 +304,6 @@ const LearnModeScreen = ({ onBack }) => {
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* Instructions */}
         <View style={styles.instructionCard}>
           <Text style={styles.instructionTitle}>How it works:</Text>
           <Text style={styles.instructionText}>
@@ -198,19 +313,19 @@ const LearnModeScreen = ({ onBack }) => {
           </Text>
         </View>
 
-        {/* Text Display */}
-        <View style={styles.textCard}>
-          <Text style={styles.textTitle}>Read this passage:</Text>
-          <View style={styles.textContent}>
-            {wordStates.length > 0 ? (
-              wordStates.map((wordState, index) => renderWord(wordState, index))
-            ) : (
-              <Text style={styles.word}>{BOOK_EXTRACT}</Text>
-            )}
+        {currentPassage && (
+          <View style={styles.textCard}>
+            <Text style={styles.textTitle}>Read this passage:</Text>
+            <View style={styles.textContent}>
+              {wordStates.length > 0 ? (
+                wordStates.map((wordState, index) => renderWord(wordState, index))
+              ) : (
+                <Text style={styles.word}>{currentPassage.text}</Text>
+              )}
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* Microphone Button */}
         <View style={styles.microphoneContainer}>
           <TouchableOpacity
             style={[
@@ -240,7 +355,6 @@ const LearnModeScreen = ({ onBack }) => {
           </Text>
         </View>
 
-        {/* Transcribed Text */}
         {transcribedText.length > 0 && (
           <View style={styles.transcriptCard}>
             <Text style={styles.transcriptTitle}>What we heard:</Text>
@@ -248,7 +362,6 @@ const LearnModeScreen = ({ onBack }) => {
           </View>
         )}
 
-        {/* Score Display */}
         {hasFinished && score !== null && (
           <View style={styles.scoreCard}>
             <Text style={styles.scoreTitle}>Your Score</Text>
@@ -263,15 +376,52 @@ const LearnModeScreen = ({ onBack }) => {
                 : 'Keep practicing! 📚'}
             </Text>
 
-            <TouchableOpacity
-              style={styles.tryAgainButton}
-              onPress={resetSession}
-            >
-              <Text style={styles.tryAgainText}>Try Again</Text>
-            </TouchableOpacity>
+            <View style={styles.xpContainer}>
+              <Text style={styles.xpText}>+{earnedXP} XP</Text>
+            </View>
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.tryAgainButton]}
+                onPress={tryNewPassage}
+              >
+                <Text style={styles.actionButtonText}>New Passage</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.changeDifficultyButton]}
+                onPress={() => setDifficulty(null)}
+              >
+                <Text style={styles.actionButtonText}>Change Difficulty</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Level Up Modal */}
+      <Modal
+        visible={showLevelUp}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLevelUp(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.levelUpCard}>
+            <Text style={styles.levelUpEmoji}>🎉</Text>
+            <Text style={styles.levelUpTitle}>Level Up!</Text>
+            <Text style={styles.levelUpText}>
+              Level {levelUpInfo?.oldLevel} → {levelUpInfo?.newLevel}
+            </Text>
+            <TouchableOpacity
+              style={styles.levelUpButton}
+              onPress={() => setShowLevelUp(false)}
+            >
+              <Text style={styles.levelUpButtonText}>Awesome!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -295,10 +445,18 @@ const styles = StyleSheet.create({
   backButton: {
     padding: spacing.xs,
   },
+  headerCenter: {
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.text,
+  },
+  headerSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.textLight,
+    marginTop: 2,
   },
   placeholder: {
     width: 40,
@@ -309,9 +467,54 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: spacing.lg,
   },
+  difficultyContainer: {
+    padding: spacing.xl,
+    alignItems: 'stretch',
+  },
+  difficultyPrompt: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  difficultyCard: {
+    backgroundColor: '#fff',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 3,
+    ...shadows.medium,
+  },
+  easyCard: {
+    borderColor: '#7ED957',
+  },
+  mediumCard: {
+    borderColor: colors.secondary,
+  },
+  hardCard: {
+    borderColor: colors.accent,
+  },
+  difficultyEmoji: {
+    fontSize: 56,
+    marginBottom: spacing.md,
+  },
+  difficultyTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  difficultyDescription: {
+    fontSize: fontSize.md,
+    color: colors.textLight,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
   instructionCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
     borderWidth: 1,
@@ -331,7 +534,7 @@ const styles = StyleSheet.create({
   },
   textCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
     borderWidth: 2,
@@ -376,11 +579,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    ...shadows.large,
   },
   microphoneButtonActive: {
     backgroundColor: '#E53935',
@@ -396,7 +595,7 @@ const styles = StyleSheet.create({
   },
   transcriptCard: {
     backgroundColor: '#F5F5F5',
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
@@ -414,7 +613,7 @@ const styles = StyleSheet.create({
   },
   scoreCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     padding: spacing.xl,
     alignItems: 'center',
     borderWidth: 2,
@@ -436,17 +635,81 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.medium,
     color: colors.textLight,
+    marginBottom: spacing.md,
+  },
+  xpContainer: {
+    backgroundColor: colors.primaryLight + '30',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
     marginBottom: spacing.lg,
+  },
+  xpText: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.primary,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
   },
   tryAgainButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-    marginTop: spacing.md,
   },
-  tryAgainText: {
+  changeDifficultyButton: {
+    backgroundColor: colors.secondary,
+  },
+  actionButtonText: {
     fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: '#fff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  levelUpCard: {
+    backgroundColor: '#fff',
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+  },
+  levelUpEmoji: {
+    fontSize: 80,
+    marginBottom: spacing.lg,
+  },
+  levelUpTitle: {
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  levelUpText: {
+    fontSize: fontSize.xl,
+    color: colors.primary,
+    fontWeight: fontWeight.bold,
+    marginBottom: spacing.xl,
+  },
+  levelUpButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  levelUpButtonText: {
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: '#fff',
   },

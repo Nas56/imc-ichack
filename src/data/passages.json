@@ -1,0 +1,128 @@
+{
+  "easy": [
+    {
+      "id": "easy-1",
+      "text": "The cat sat on the mat. It was a sunny day. The cat was happy.",
+      "estimatedSeconds": 8
+    },
+    {
+      "id": "easy-2",
+      "text": "I like to play with my dog. We run in the park. It is fun.",
+      "estimatedSeconds": 9
+    },
+    {
+      "id": "easy-3",
+      "text": "The bird can fly high. It has blue wings. The bird sings a song.",
+      "estimatedSeconds": 10
+    },
+    {
+      "id": "easy-4",
+      "text": "Mom made me a sandwich. It has cheese and ham. I ate it all.",
+      "estimatedSeconds": 9
+    },
+    {
+      "id": "easy-5",
+      "text": "The sun is bright today. I can see the clouds. They are white and soft.",
+      "estimatedSeconds": 10
+    },
+    {
+      "id": "easy-6",
+      "text": "My friend has a red bike. We ride to school together. It makes me smile.",
+      "estimatedSeconds": 11
+    },
+    {
+      "id": "easy-7",
+      "text": "The fish swims in the water. It is small and orange. I watch it every day.",
+      "estimatedSeconds": 10
+    },
+    {
+      "id": "easy-8",
+      "text": "We went to the store. I got some milk and bread. Then we came home.",
+      "estimatedSeconds": 10
+    }
+  ],
+  "medium": [
+    {
+      "id": "medium-1",
+      "text": "The ancient castle stood on the hilltop, its gray stone walls covered in ivy. Tourists came from distant places to explore its mysterious rooms. Legend says a treasure is hidden somewhere inside.",
+      "estimatedSeconds": 18
+    },
+    {
+      "id": "medium-2",
+      "text": "Sarah discovered a peculiar insect in her garden yesterday. Its wings shimmered with rainbow colors in the sunlight. She carefully photographed it before releasing the creature back into nature.",
+      "estimatedSeconds": 19
+    },
+    {
+      "id": "medium-3",
+      "text": "The orchestra performed a magnificent symphony last night. Each musician played their instrument with incredible skill and passion. The audience applauded loudly when the final note echoed through the concert hall.",
+      "estimatedSeconds": 20
+    },
+    {
+      "id": "medium-4",
+      "text": "Lightning flashed across the darkened sky as thunder rumbled in the distance. The storm approached quickly, bringing heavy rain and strong winds. People rushed indoors to stay safe and dry.",
+      "estimatedSeconds": 19
+    },
+    {
+      "id": "medium-5",
+      "text": "The bakery on Market Street produces the most delicious pastries in town. Fresh croissants and cinnamon rolls emerge from the ovens each morning. The wonderful aroma attracts customers from blocks away.",
+      "estimatedSeconds": 20
+    },
+    {
+      "id": "medium-6",
+      "text": "Dr. Martinez examined the unusual specimen under her microscope carefully. The cells displayed a pattern she had never encountered before. This discovery might change everything scientists understood about biology.",
+      "estimatedSeconds": 20
+    },
+    {
+      "id": "medium-7",
+      "text": "The marathon runner trained rigorously for months preparing for the big race. Every morning she practiced running longer distances and building her endurance. Her dedication and determination would finally be tested.",
+      "estimatedSeconds": 19
+    },
+    {
+      "id": "medium-8",
+      "text": "Ancient civilizations built remarkable structures without modern technology. They used simple tools and tremendous effort to create temples and pyramids. These monuments still stand today as testaments to human ingenuity.",
+      "estimatedSeconds": 20
+    }
+  ],
+  "hard": [
+    {
+      "id": "hard-1",
+      "text": "The renowned archaeologist meticulously excavated the site, uncovering artifacts that challenged conventional theories about early human civilization. Each fragment of pottery and weathered tool provided invaluable insight into the sophisticated culture that flourished here millennia ago. Her groundbreaking discoveries would inevitably revolutionize our understanding of ancient societies and their remarkable achievements.",
+      "estimatedSeconds": 28
+    },
+    {
+      "id": "hard-2",
+      "text": "Quantum mechanics presents paradoxical phenomena that defy intuitive comprehension. Subatomic particles simultaneously exist in multiple states until observation collapses the wave function into a definite configuration. This fundamental uncertainty principle fundamentally contradicts our everyday experiences with macroscopic objects, yet experimental evidence consistently validates these counterintuitive predictions.",
+      "estimatedSeconds": 29
+    },
+    {
+      "id": "hard-3",
+      "text": "The pharmaceutical research team synthesized a novel compound demonstrating unprecedented efficacy against previously incurable diseases. Through rigorous clinical trials and meticulous analysis, they documented remarkable therapeutic benefits with minimal adverse effects. Regulatory approval processes would scrutinize every aspect of their methodology before this breakthrough treatment could benefit patients worldwide.",
+      "estimatedSeconds": 30
+    },
+    {
+      "id": "hard-4",
+      "text": "Environmental conservation requires comprehensive strategies addressing interconnected ecological systems. Biodiversity preservation, sustainable resource management, and climate change mitigation demand collaborative international efforts. Policymakers must balance economic development with environmental stewardship, implementing innovative solutions that ensure planetary health for future generations while meeting present societal needs.",
+      "estimatedSeconds": 29
+    },
+    {
+      "id": "hard-5",
+      "text": "Artificial intelligence algorithms demonstrate increasingly sophisticated capabilities, processing vast datasets to identify patterns imperceptible to human analysts. Machine learning models continuously refine their performance through iterative training cycles. However, ethical considerations regarding algorithmic bias, privacy implications, and autonomous decision-making require careful philosophical and practical examination.",
+      "estimatedSeconds": 30
+    },
+    {
+      "id": "hard-6",
+      "text": "The symphony's crescendo built gradually, interweaving melodic themes with harmonic complexity that showcased the composer's extraordinary craftsmanship. Each instrumental section contributed distinctive timbral colors, creating a multifaceted sonic tapestry. The conductor's nuanced interpretation emphasized subtle dynamic variations, eliciting an emotionally profound performance that resonated deeply with the distinguished audience.",
+      "estimatedSeconds": 29
+    },
+    {
+      "id": "hard-7",
+      "text": "Astrophysicists hypothesize that dark matter comprises approximately eighty-five percent of the universe's total mass, yet remains frustratingly undetectable through conventional observational methods. Gravitational effects on visible matter provide indirect evidence for its existence. Sophisticated experiments deployed deep underground attempt to capture elusive interactions between dark matter particles and ordinary atomic nuclei.",
+      "estimatedSeconds": 30
+    },
+    {
+      "id": "hard-8",
+      "text": "Renaissance artists revolutionized visual representation through mathematical perspective and anatomical precision, departing dramatically from medieval conventions. Masters like Leonardo da Vinci meticulously studied human physiology and optical principles to achieve unprecedented realism. Their innovative techniques established foundational principles that continue influencing contemporary artistic practices and aesthetic philosophy.",
+      "estimatedSeconds": 29
+    }
+  ]
+}

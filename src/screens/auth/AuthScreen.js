@@ -75,13 +75,13 @@ export const AuthScreen = ({ onAuthSuccess }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-      // Store user data in Realtime Database
+      // Store user data in Realtime Database with new leveling system
       await set(ref(db, 'users/' + userCredential.user.uid), {
         email: email,
         createdAt: new Date().toISOString(),
         uid: userCredential.user.uid,
-        totalScore: 0,
-        currentTier: 'Seedling',
+        xp: 0,
+        level: 1,
         awards: [],
       });
 

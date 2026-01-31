@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../../../firebaseConfig';
-import { colors, spacing, fontSize, fontWeight, borderRadius, shadows, getTierByScore, getTierProgress } from '../../theme';
+import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 import { Button, Card, ProgressBar } from '../../components';
+import { getLevelInfo, getLevelMessage } from '../../services/levelingService';
 import LearnModeScreen from '../learn/LearnModeScreen';
 
 const { width } = Dimensions.get('window');
@@ -18,8 +19,8 @@ const { width } = Dimensions.get('window');
 export const HomeScreen = ({ user, onLogout }) => {
   const [currentScreen, setCurrentScreen] = useState('home'); // 'home' or 'learn'
   const [userData, setUserData] = useState({
-    totalScore: 0,
-    currentTier: 'Seedling',
+    xp: 0,
+    level: 1,
     awards: [],
     currentBook: null,
   });
@@ -31,8 +32,8 @@ export const HomeScreen = ({ user, onLogout }) => {
         const data = snapshot.val();
         if (data) {
           setUserData({
-            totalScore: data.totalScore || 0,
-            currentTier: data.currentTier || 'Seedling',
+            xp: data.xp || 0,
+            level: data.level || 1,
             awards: data.awards || [],
             currentBook: data.currentBook || null,
           });
@@ -43,8 +44,8 @@ export const HomeScreen = ({ user, onLogout }) => {
     }
   }, [user]);
 
-  const currentTier = getTierByScore(userData.totalScore);
-  const { progress, nextTierScore } = getTierProgress(userData.totalScore);
+  const levelInfo = getLevelInfo(userData.xp);
+  const levelMessage = getLevelMessage(levelInfo.level);
 
   console.log('Current screen:', currentScreen);
 
@@ -52,7 +53,7 @@ export const HomeScreen = ({ user, onLogout }) => {
   if (currentScreen === 'learn') {
     console.log('Rendering LearnModeScreen');
     return (
-      <LearnModeScreen onBack={() => setCurrentScreen('home')} />
+      <LearnModeScreen onBack={() => setCurrentScreen('home')} user={user} />
     );
   }
 
@@ -74,33 +75,32 @@ export const HomeScreen = ({ user, onLogout }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Tier Progress Card */}
+        {/* Level Progress Card */}
         <Card style={styles.tierCard} variant="primary">
           <View style={styles.tierHeader}>
             <View>
-              <Text style={styles.tierLabel}>Current Tier</Text>
+              <Text style={styles.tierLabel}>Your Level</Text>
               <View style={styles.tierNameContainer}>
-                <Text style={styles.tierEmoji}>{currentTier.emoji}</Text>
-                <Text style={styles.tierName}>{currentTier.name}</Text>
+                <Text style={styles.tierEmoji}>⭐</Text>
+                <Text style={styles.tierName}>Level {levelInfo.level}</Text>
               </View>
+              <Text style={styles.levelMessage}>{levelMessage}</Text>
             </View>
             <View style={styles.scoreContainer}>
-              <Text style={styles.scoreLabel}>Total Score</Text>
-              <Text style={styles.scoreValue}>{userData.totalScore}</Text>
+              <Text style={styles.scoreLabel}>Total XP</Text>
+              <Text style={styles.scoreValue}>{userData.xp}</Text>
             </View>
           </View>
 
           <ProgressBar
-            progress={progress}
+            progress={levelInfo.progressPercent}
             height={16}
-            color={currentTier.color}
+            color={colors.primary}
           />
 
-          {nextTierScore && (
-            <Text style={styles.nextTierText}>
-              {nextTierScore - userData.totalScore} points to next tier
-            </Text>
-          )}
+          <Text style={styles.nextTierText}>
+            {levelInfo.xpToNextLevel} XP to Level {levelInfo.level + 1}
+          </Text>
         </Card>
 
         {/* Continue Reading Card */}
@@ -167,7 +167,7 @@ export const HomeScreen = ({ user, onLogout }) => {
               description="Test your skills and earn rewards"
               color={colors.accent}
               onPress={() => {}}
-              locked={userData.totalScore < 100}
+              locked={levelInfo.level < 5}
             />
           </View>
         </View>
@@ -315,6 +315,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.text,
+  },
+  levelMessage: {
+    fontSize: fontSize.sm,
+    color: colors.textLight,
+    marginTop: spacing.xs,
   },
   scoreContainer: {
     alignItems: 'flex-end',
