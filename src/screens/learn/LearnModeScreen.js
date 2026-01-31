@@ -15,6 +15,7 @@ import { ref, update, get } from 'firebase/database';
 import { db } from '../../../firebaseConfig';
 import { transcribeAudio } from '../../services/deepgramService';
 import { calculateXP, addXP, getLevelInfo } from '../../services/levelingService';
+import { generatePassage } from '../../services/passageGenerationService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
 import passagesData from '../../data/passages.json';
 
@@ -23,6 +24,7 @@ const LearnModeScreen = ({ onBack, user }) => {
   const [currentPassage, setCurrentPassage] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [wordStates, setWordStates] = useState([]);
   const [score, setScore] = useState(null);
@@ -63,12 +65,34 @@ const LearnModeScreen = ({ onBack, user }) => {
     loadRandomPassage(selectedDifficulty);
   };
 
-  const loadRandomPassage = (diff) => {
-    const passages = passagesData[diff];
-    if (passages && passages.length > 0) {
-      const randomIndex = Math.floor(Math.random() * passages.length);
-      setCurrentPassage(passages[randomIndex]);
-      resetSession();
+  const loadRandomPassage = async (diff) => {
+    setIsGenerating(true);
+    resetSession();
+
+    try {
+      // Try to generate passage using Claude API
+      console.log(`Generating ${diff} passage with Claude AI...`);
+      const generatedPassage = await generatePassage(diff);
+      setCurrentPassage(generatedPassage);
+      console.log('✅ Successfully generated passage with Claude AI');
+    } catch (error) {
+      console.error('Failed to generate passage with Claude AI:', error);
+      console.log('Falling back to local passages...');
+
+      // Fallback to local JSON passages
+      const passages = passagesData[diff];
+      if (passages && passages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * passages.length);
+        setCurrentPassage(passages[randomIndex]);
+        console.log('✅ Loaded passage from local database');
+      } else {
+        Alert.alert(
+          'Error',
+          'Failed to load passage. Please try again.'
+        );
+      }
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -322,7 +346,14 @@ const LearnModeScreen = ({ onBack, user }) => {
           </Text>
         </View>
 
-        {currentPassage && (
+        {isGenerating ? (
+          <View style={styles.generatingCard}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.generatingText}>
+              ✨ Generating your unique passage with AI...
+            </Text>
+          </View>
+        ) : currentPassage && (
           <View style={styles.textCard}>
             <Text style={styles.textTitle}>read this passage:</Text>
             <View style={styles.textContent}>
@@ -564,6 +595,24 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.regular,
     color: colors.mutedForeground,
     lineHeight: 24,
+    textTransform: 'lowercase',
+  },
+  generatingCard: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xxl,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.accent,
+    ...shadows.card,
+  },
+  generatingText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.foreground,
+    marginTop: spacing.lg,
+    textAlign: 'center',
     textTransform: 'lowercase',
   },
   textCard: {
