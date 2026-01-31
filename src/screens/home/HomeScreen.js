@@ -12,11 +12,12 @@ import { db } from '../../../firebaseConfig';
 import { colors, spacing, fontSize, fontWeight, borderRadius, shadows, getTierByScore, getTierProgress } from '../../theme';
 import { Button, Card, ProgressBar } from '../../components';
 import LearnModeScreen from '../learn/LearnModeScreen';
+import ChallengeModeScreen from '../challenge/ChallengeModeScreen';
 
 const { width } = Dimensions.get('window');
 
 export const HomeScreen = ({ user, onLogout }) => {
-  const [currentScreen, setCurrentScreen] = useState('home'); // 'home' or 'learn'
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'learn', or 'challenge'
   const [userData, setUserData] = useState({
     totalScore: 0,
     currentTier: 'Seedling',
@@ -53,6 +54,14 @@ export const HomeScreen = ({ user, onLogout }) => {
     console.log('Rendering LearnModeScreen');
     return (
       <LearnModeScreen onBack={() => setCurrentScreen('home')} />
+    );
+  }
+
+  // Show Challenge Mode screen if selected
+  if (currentScreen === 'challenge') {
+    console.log('Rendering ChallengeModeScreen');
+    return (
+      <ChallengeModeScreen onBack={() => setCurrentScreen('home')} />
     );
   }
 
@@ -166,8 +175,11 @@ export const HomeScreen = ({ user, onLogout }) => {
               title="Challenge Mode"
               description="Test your skills and earn rewards"
               color={colors.accent}
-              onPress={() => {}}
-              locked={userData.totalScore < 100}
+              onPress={() => {
+                console.log('Challenge Mode clicked!');
+                setCurrentScreen('challenge');
+              }}
+              locked={false} // Temporarily unlocked for testing
             />
           </View>
         </View>
