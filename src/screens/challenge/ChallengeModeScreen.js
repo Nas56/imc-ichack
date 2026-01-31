@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -214,70 +215,130 @@ const ChallengeModeScreen = ({ onBack }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Challenge Mode</Text>
+        <Text style={styles.headerTitle}>challenge mode</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* Timer and Metrics Bar */}
       <View style={styles.metricsBar}>
         <View style={styles.metricItem}>
-          <Ionicons name="time-outline" size={20} color={colors.accent} />
-          <Text style={styles.metricLabel}>Time</Text>
+          <Ionicons name="time-outline" size={18} color={colors.accent} />
+          <Text style={styles.metricLabel}>time</Text>
           <Text style={styles.metricValue}>{formatTime(elapsedTime)}</Text>
         </View>
         {wpm !== null && (
           <View style={styles.metricItem}>
-            <Ionicons name="speedometer-outline" size={20} color={colors.secondary} />
-            <Text style={styles.metricLabel}>WPM</Text>
+            <Ionicons name="speedometer-outline" size={18} color={colors.secondary} />
+            <Text style={styles.metricLabel}>wpm</Text>
             <Text style={styles.metricValue}>{wpm}</Text>
           </View>
         )}
         {score !== null && (
           <View style={styles.metricItem}>
-            <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
-            <Text style={styles.metricLabel}>Accuracy</Text>
+            <Ionicons name="checkmark-circle-outline" size={18} color={colors.quaternary} />
+            <Text style={styles.metricLabel}>accuracy</Text>
             <Text style={styles.metricValue}>{score}%</Text>
           </View>
         )}
       </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {/* Instructions */}
-        {!isRecording && !hasFinished && (
-          <View style={styles.instructionCard}>
-            <Text style={styles.instructionTitle}>⚡ Challenge Rules:</Text>
-            <Text style={styles.instructionText}>
-              1. Read the passage as quickly AND accurately as you can{'\n'}
-              2. Your time and WPM will be tracked{'\n'}
-              3. Try to beat your personal best!
+      <View style={styles.contentWrapper}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Instructions - Only show when not recording and not finished */}
+          {!isRecording && !hasFinished && (
+            <View style={styles.instructionCard}>
+              <Text style={styles.instructionTitle}>⚡ challenge rules</Text>
+              <Text style={styles.instructionText}>
+                read the passage quickly and accurately. your time and accuracy will be tracked.
+              </Text>
+            </View>
+          )}
+
+          {/* Text Display */}
+          <View style={styles.textCard}>
+            <Text style={styles.textTitle}>
+              {hasFinished ? 'your performance:' : 'read this passage:'}
             </Text>
+            <ScrollView 
+              style={styles.textScrollView}
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.textContent}>
+                {wordStates.length > 0 ? (
+                  wordStates.map((wordState, index) => renderWord(wordState, index))
+                ) : (
+                  <Text style={styles.word}>{CHALLENGE_TEXT}</Text>
+                )}
+              </View>
+            </ScrollView>
           </View>
-        )}
 
-        {/* Text Display */}
-        <View style={styles.textCard}>
-          <Text style={styles.textTitle}>
-            {hasFinished ? 'Your Performance:' : 'Read this passage:'}
-          </Text>
-          <View style={styles.textContent}>
-            {wordStates.length > 0 ? (
-              wordStates.map((wordState, index) => renderWord(wordState, index))
-            ) : (
-              <Text style={styles.word}>{CHALLENGE_TEXT}</Text>
-            )}
-          </View>
-        </View>
+          {/* Transcribed Text - Only show if there's content and not finished */}
+          {transcribedText.length > 0 && !hasFinished && (
+            <View style={styles.transcriptCard}>
+              <Text style={styles.transcriptTitle}>what we heard:</Text>
+              <Text style={styles.transcriptText}>{transcribedText}</Text>
+            </View>
+          )}
 
-        {/* Microphone Button */}
+          {/* Results Display */}
+          {hasFinished && (
+            <View style={styles.resultsCard}>
+              <Text style={styles.resultsTitle}>challenge complete! 🎉</Text>
+
+              <View style={styles.resultsGrid}>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultLabel}>accuracy</Text>
+                  <Text style={[styles.resultValue, { color: colors.quaternary }]}>
+                    {score}%
+                  </Text>
+                </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultLabel}>wpm</Text>
+                  <Text style={[styles.resultValue, { color: colors.secondary }]}>
+                    {wpm}
+                  </Text>
+                </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultLabel}>time</Text>
+                  <Text style={[styles.resultValue, { color: colors.accent }]}>
+                    {formatTime(elapsedTime)}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.performanceLabel}>
+                {score >= 90 && wpm >= 100
+                  ? 'outstanding! 🌟'
+                  : score >= 80 && wpm >= 80
+                  ? 'excellent work! 🎯'
+                  : score >= 70 && wpm >= 60
+                  ? 'great effort! 💪'
+                  : 'keep practicing! 📚'}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.tryAgainButton}
+                onPress={resetSession}
+              >
+                <Text style={styles.tryAgainText}>try again</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Microphone Button - Fixed at bottom, outside ScrollView */}
         {!hasFinished && (
           <View style={styles.microphoneContainer}>
             <TouchableOpacity
@@ -288,81 +349,29 @@ const ChallengeModeScreen = ({ onBack }) => {
               ]}
               onPress={isRecording ? stopRecording : startRecording}
               disabled={isProcessing}
+              activeOpacity={0.8}
             >
               {isProcessing ? (
-                <ActivityIndicator size="large" color="#fff" />
+                <ActivityIndicator size="large" color={colors.accentForeground} />
               ) : (
                 <Ionicons
                   name={isRecording ? 'stop' : 'mic'}
-                  size={48}
-                  color="#fff"
+                  size={40}
+                  color={colors.accentForeground}
                 />
               )}
             </TouchableOpacity>
             <Text style={styles.microphoneLabel}>
               {isProcessing
-                ? 'Processing...'
+                ? 'processing...'
                 : isRecording
-                ? 'Tap to stop recording'
-                : 'Tap to start challenge'}
+                ? 'tap to stop'
+                : 'tap to start'}
             </Text>
           </View>
         )}
-
-        {/* Transcribed Text */}
-        {transcribedText.length > 0 && (
-          <View style={styles.transcriptCard}>
-            <Text style={styles.transcriptTitle}>What we heard:</Text>
-            <Text style={styles.transcriptText}>{transcribedText}</Text>
-          </View>
-        )}
-
-        {/* Results Display */}
-        {hasFinished && (
-          <View style={styles.resultsCard}>
-            <Text style={styles.resultsTitle}>Challenge Complete! 🎉</Text>
-
-            <View style={styles.resultsGrid}>
-              <View style={styles.resultItem}>
-                <Text style={styles.resultLabel}>Accuracy</Text>
-                <Text style={[styles.resultValue, { color: colors.primary }]}>
-                  {score}%
-                </Text>
-              </View>
-              <View style={styles.resultItem}>
-                <Text style={styles.resultLabel}>WPM</Text>
-                <Text style={[styles.resultValue, { color: colors.secondary }]}>
-                  {wpm}
-                </Text>
-              </View>
-              <View style={styles.resultItem}>
-                <Text style={styles.resultLabel}>Time</Text>
-                <Text style={[styles.resultValue, { color: colors.accent }]}>
-                  {formatTime(elapsedTime)}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.performanceLabel}>
-              {score >= 90 && wpm >= 100
-                ? 'Outstanding! 🌟'
-                : score >= 80 && wpm >= 80
-                ? 'Excellent work! 🎯'
-                : score >= 70 && wpm >= 60
-                ? 'Great effort! 💪'
-                : 'Keep practicing! 📚'}
-            </Text>
-
-            <TouchableOpacity
-              style={styles.tryAgainButton}
-              onPress={resetSession}
-            >
-              <Text style={styles.tryAgainText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -376,31 +385,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    backgroundColor: colors.card,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.foreground,
   },
   backButton: {
     padding: spacing.xs,
   },
   headerTitle: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
   },
   placeholder: {
     width: 40,
   },
   metricsBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingVertical: spacing.md,
+    backgroundColor: colors.card,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     justifyContent: 'space-around',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomWidth: 2,
+    borderBottomColor: colors.border,
   },
   metricItem: {
     alignItems: 'center',
@@ -408,177 +418,212 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.regular,
-    color: colors.textMuted,
+    fontWeight: fontWeight.medium,
+    color: colors.mutedForeground,
     marginTop: spacing.xs,
+    textTransform: 'lowercase',
   },
   metricValue: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
     marginTop: 2,
+  },
+  contentWrapper: {
+    flex: 1,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: spacing.lg,
+    paddingBottom: spacing.xl + 120, // Extra padding for fixed mic button
   },
   instructionCard: {
-    backgroundColor: '#FFF9E6',
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     borderWidth: 2,
     borderColor: colors.secondary,
+    ...shadows.card,
   },
   instructionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.xs,
+    textTransform: 'lowercase',
   },
   instructionText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.regular,
-    color: colors.textLight,
-    lineHeight: 24,
+    color: colors.mutedForeground,
+    lineHeight: 20,
+    textTransform: 'lowercase',
   },
   textCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     borderWidth: 2,
     borderColor: colors.accent,
+    maxHeight: 200,
+    ...shadows.card,
   },
   textTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+    textTransform: 'lowercase',
+  },
+  textScrollView: {
+    maxHeight: 150,
   },
   textContent: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
   word: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.regular,
-    color: colors.text,
-    lineHeight: 28,
+    color: colors.foreground,
+    lineHeight: 22,
   },
   correctWord: {
-    backgroundColor: '#C8E6C9',
-    color: '#2E7D32',
-    paddingHorizontal: 4,
-    borderRadius: 4,
+    backgroundColor: colors.quaternary,
+    color: colors.foreground,
+    paddingHorizontal: 3,
+    borderRadius: 3,
+    fontWeight: fontWeight.bold,
   },
   incorrectWord: {
-    backgroundColor: '#FFCDD2',
-    color: '#C62828',
-    paddingHorizontal: 4,
-    borderRadius: 4,
+    backgroundColor: colors.secondary,
+    color: colors.foreground,
+    paddingHorizontal: 3,
+    borderRadius: 3,
+    fontWeight: fontWeight.bold,
   },
   microphoneContainer: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    marginVertical: spacing.xl,
+    backgroundColor: colors.background,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: 2,
+    borderTopColor: colors.border,
+    ...shadows.hard,
   },
   microphoneButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    borderWidth: 3,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   microphoneButtonActive: {
-    backgroundColor: '#E53935',
-  },
-  microphoneButtonProcessing: {
     backgroundColor: colors.secondary,
   },
+  microphoneButtonProcessing: {
+    backgroundColor: colors.tertiary,
+  },
   microphoneLabel: {
-    marginTop: spacing.md,
-    fontSize: fontSize.md,
+    marginTop: spacing.sm,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    color: colors.textLight,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
   },
   transcriptCard: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    backgroundColor: colors.muted,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.border,
   },
   transcriptTitle: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.xs,
+    textTransform: 'lowercase',
   },
   transcriptText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.regular,
-    color: colors.textLight,
-    lineHeight: 24,
+    color: colors.mutedForeground,
+    lineHeight: 20,
   },
   resultsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: spacing.xl,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.secondary,
+    marginBottom: spacing.xl,
+    ...shadows.card,
   },
   resultsTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.lg,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.md,
+    textTransform: 'lowercase',
   },
   resultsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   resultItem: {
     alignItems: 'center',
     flex: 1,
   },
   resultLabel: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    color: colors.textMuted,
+    color: colors.mutedForeground,
     marginBottom: spacing.xs,
+    textTransform: 'lowercase',
   },
   resultValue: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.extraBold,
   },
   performanceLabel: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
-    color: colors.textLight,
-    marginBottom: spacing.lg,
+    color: colors.mutedForeground,
+    marginBottom: spacing.md,
     textAlign: 'center',
+    textTransform: 'lowercase',
   },
   tryAgainButton: {
     backgroundColor: colors.accent,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: 12,
-    marginTop: spacing.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   tryAgainText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: '#fff',
+    color: colors.accentForeground,
+    textTransform: 'lowercase',
   },
 });
 

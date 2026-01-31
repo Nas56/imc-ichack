@@ -143,7 +143,7 @@ export const HomeScreen = ({ user, onLogout }) => {
                 console.log('Challenge Mode clicked!');
                 setCurrentScreen('challenge');
               }}
-              locked={levelInfo.level < 5}
+              locked={levelInfo.level < 2}
             />
           </View>
         </View>
@@ -280,7 +280,7 @@ const ModeCard = ({ emoji, title, description, color, onPress, locked = false })
       </View>
       <Text style={[styles.modeTitle, locked && styles.modeTitleLocked]}>{title}</Text>
       <Text style={styles.modeDescription}>
-        {locked ? 'unlock at level 5' : description}
+        {locked ? 'unlock at level 2' : description}
       </Text>
       {locked && (
         <View style={styles.lockBadge}>
