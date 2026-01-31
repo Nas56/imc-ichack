@@ -123,6 +123,31 @@ export const HomeScreen = ({ user, onLogout }) => {
           </Card>
         </View>
 
+        {/* Mode Selection - Playful Cards */}
+        <View style={styles.modesSection}>
+          <Text style={styles.sectionTitle}>🎮 choose your mode</Text>
+          <View style={styles.modesGrid}>
+            <ModeCard
+              emoji="📚"
+              title="learn mode"
+              description="practice reading with helpful feedback"
+              color={colors.accent}
+              onPress={() => setCurrentScreen('learn')}
+            />
+            <ModeCard
+              emoji="⚔️"
+              title="challenge mode"
+              description="test your skills and earn rewards"
+              color={colors.tertiary}
+              onPress={() => {
+                console.log('Challenge Mode clicked!');
+                setCurrentScreen('challenge');
+              }}
+              locked={levelInfo.level < 5}
+            />
+          </View>
+        </View>
+
         {/* Continue Reading Card */}
         {userData.currentBook ? (
           <View style={styles.cardContainer}>
@@ -170,31 +195,6 @@ export const HomeScreen = ({ user, onLogout }) => {
             </Card>
           </View>
         )}
-
-        {/* Mode Selection - Playful Cards */}
-        <View style={styles.modesSection}>
-          <Text style={styles.sectionTitle}>🎮 choose your mode</Text>
-          <View style={styles.modesGrid}>
-            <ModeCard
-              emoji="📚"
-              title="learn mode"
-              description="practice reading with helpful feedback"
-              color={colors.accent}
-              onPress={() => setCurrentScreen('learn')}
-            />
-            <ModeCard
-              emoji="⚔️"
-              title="challenge mode"
-              description="test your skills and earn rewards"
-              color={colors.tertiary}
-              onPress={() => {
-                console.log('Challenge Mode clicked!');
-                setCurrentScreen('challenge');
-              }}
-              locked={levelInfo.level < 5}
-            />
-          </View>
-        </View>
 
         {/* Awards Preview */}
         {userData.awards.length > 0 && (
@@ -473,12 +473,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.extraBold,
     color: colors.foreground,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     textTransform: 'lowercase',
   },
   bookPreview: {
     flexDirection: 'row',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   bookCover: {
     width: 80,
@@ -508,21 +508,21 @@ const styles = StyleSheet.create({
   bookProgress: {
     fontSize: fontSize.sm,
     color: colors.mutedForeground,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
     textTransform: 'lowercase',
   },
   emptyText: {
     fontSize: fontSize.md,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginVertical: spacing.lg,
-    lineHeight: 24,
+    marginVertical: spacing.sm,
+    lineHeight: 22,
     textTransform: 'lowercase',
   },
 
   // Pill Buttons
   pillButton: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.full,
     borderWidth: 2,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   pillButtonPrimary: {
     backgroundColor: colors.accent,
