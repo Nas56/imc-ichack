@@ -11,6 +11,8 @@ import {
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { transcribeAudio } from '../../services/deepgramService';
+import { generateChallengeModeFeedback } from '../../services/claudeService';
+import { speakWords } from '../../services/elevenLabsService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
 
 // Challenge text - slightly longer and more complex
@@ -25,6 +27,9 @@ const ChallengeModeScreen = ({ onBack }) => {
   const [wpm, setWpm] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [hasFinished, setHasFinished] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState('');
+  const [incorrectWords, setIncorrectWords] = useState([]);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   const recordingRef = useRef(null);
   const audioPermissionRef = useRef(false);
@@ -139,7 +144,7 @@ const ChallengeModeScreen = ({ onBack }) => {
     }
   };
 
-  const compareTexts = (transcript, timeInSeconds) => {
+  const compareTexts = async (transcript, timeInSeconds) => {
     // Normalize texts
     const normalizeText = (text) =>
       text.toLowerCase()
@@ -171,9 +176,24 @@ const ChallengeModeScreen = ({ onBack }) => {
     const minutes = timeInSeconds / 60;
     const wordsPerMinute = Math.round(correctWords / minutes);
 
+    // Get incorrect words for AI feedback and pronunciation help
+    const incorrect = states
+      .filter(state => !state.isCorrect)
+      .map(state => state.word);
+    setIncorrectWords(incorrect);
+
     setScore(percentage);
     setWpm(wordsPerMinute);
     setHasFinished(true);
+
+    // Generate AI feedback
+    try {
+      const feedback = await generateChallengeModeFeedback(percentage, wordsPerMinute, incorrect);
+      setAiFeedback(feedback);
+    } catch (error) {
+      console.error('Failed to generate AI feedback:', error);
+      setAiFeedback('Great effort! Keep practicing to improve both speed and accuracy.');
+    }
   };
 
   const resetSession = () => {
@@ -185,6 +205,9 @@ const ChallengeModeScreen = ({ onBack }) => {
     setHasFinished(false);
     setIsRecording(false);
     setIsProcessing(false);
+    setAiFeedback('');
+    setIncorrectWords([]);
+    setIsPlayingAudio(false);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -352,6 +375,43 @@ const ChallengeModeScreen = ({ onBack }) => {
                 ? 'Great effort! 💪'
                 : 'Keep practicing! 📚'}
             </Text>
+
+            {/* AI Feedback */}
+            {aiFeedback && (
+              <View style={styles.feedbackContainer}>
+                <View style={styles.feedbackHeader}>
+                  <Ionicons name="bulb" size={20} color={colors.secondary} />
+                  <Text style={styles.feedbackTitle}>AI Coach Says:</Text>
+                </View>
+                <Text style={styles.feedbackText}>{aiFeedback}</Text>
+              </View>
+            )}
+
+            {/* Pronunciation Help */}
+            {incorrectWords.length > 0 && (
+              <TouchableOpacity
+                style={styles.pronunciationButton}
+                onPress={async () => {
+                  setIsPlayingAudio(true);
+                  try {
+                    await speakWords(incorrectWords);
+                  } catch (error) {
+                    Alert.alert('Error', 'Failed to play pronunciation audio');
+                  }
+                  setIsPlayingAudio(false);
+                }}
+                disabled={isPlayingAudio}
+              >
+                <Ionicons
+                  name={isPlayingAudio ? "volume-high" : "volume-medium"}
+                  size={20}
+                  color="#fff"
+                />
+                <Text style={styles.pronunciationButtonText}>
+                  {isPlayingAudio ? 'Playing...' : 'Hear Missed Words'}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.tryAgainButton}
@@ -567,6 +627,49 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginBottom: spacing.lg,
     textAlign: 'center',
+  },
+  feedbackContainer: {
+    backgroundColor: colors.background,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.secondary,
+    width: '100%',
+  },
+  feedbackHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  feedbackTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginLeft: spacing.xs,
+  },
+  feedbackText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.regular,
+    color: colors.textLight,
+    lineHeight: 22,
+  },
+  pronunciationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    width: '100%',
+  },
+  pronunciationButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: '#fff',
+    marginLeft: spacing.sm,
   },
   tryAgainButton: {
     backgroundColor: colors.accent,
