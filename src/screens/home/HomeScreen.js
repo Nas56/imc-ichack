@@ -13,11 +13,12 @@ import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '..
 import { Button, Card, ProgressBar } from '../../components';
 import { getLevelInfo, getLevelMessage } from '../../services/levelingService';
 import LearnModeScreen from '../learn/LearnModeScreen';
+import ChallengeModeScreen from '../challenge/ChallengeModeScreen';
 
 const { width } = Dimensions.get('window');
 
 export const HomeScreen = ({ user, onLogout }) => {
-  const [currentScreen, setCurrentScreen] = useState('home'); // 'home' or 'learn'
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'learn', or 'challenge'
   const [userData, setUserData] = useState({
     xp: 0,
     level: 1,
@@ -54,6 +55,14 @@ export const HomeScreen = ({ user, onLogout }) => {
     console.log('Rendering LearnModeScreen');
     return (
       <LearnModeScreen onBack={() => setCurrentScreen('home')} user={user} />
+    );
+  }
+
+  // Show Challenge Mode screen if selected
+  if (currentScreen === 'challenge') {
+    console.log('Rendering ChallengeModeScreen');
+    return (
+      <ChallengeModeScreen onBack={() => setCurrentScreen('home')} />
     );
   }
 
@@ -166,8 +175,11 @@ export const HomeScreen = ({ user, onLogout }) => {
               title="Challenge Mode"
               description="Test your skills and earn rewards"
               color={colors.accent}
-              onPress={() => {}}
-              locked={levelInfo.level < 5}
+              onPress={() => {
+                console.log('Challenge Mode clicked!');
+                setCurrentScreen('challenge');
+              }}
+              locked={false} // Temporarily unlocked for testing
             />
           </View>
         </View>
