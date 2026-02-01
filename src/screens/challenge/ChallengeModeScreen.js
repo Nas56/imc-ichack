@@ -15,15 +15,17 @@ import { transcribeAudio } from '../../services/deepgramService';
 import { generateChallengeModeFeedback, assessPassageDifficulty } from '../../services/claudeService';
 import { speakWords, stopAllAudio } from '../../services/elevenLabsService';
 import { calculateChallengeScore, getRankInfo, addChallengeScore } from '../../services/challengeRankingService';
+import { generatePassage } from '../../services/passageGenerationService';
 import { ref, update } from 'firebase/database';
 import { db } from '../../../firebaseConfig';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
-
-// Challenge text - slightly longer and more complex
-const CHALLENGE_TEXT = "The ancient library stood tall against the evening sky, its weathered stone walls holding countless stories within. Scholars from distant lands traveled for months to access its vast collection of manuscripts and scrolls. Each book was a treasure, carefully preserved by generations of dedicated librarians who understood the immense value of knowledge.";
+import passagesData from '../../data/passages.json';
 
 const ChallengeModeScreen = ({ onBack, user }) => {
   const insets = useSafeAreaInsets();
+  const [difficulty, setDifficulty] = useState(null);
+  const [currentPassage, setCurrentPassage] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
@@ -58,6 +60,42 @@ const ChallengeModeScreen = ({ onBack, user }) => {
       stopAllAudio();
     };
   }, []);
+
+  const selectDifficulty = (selectedDifficulty) => {
+    setDifficulty(selectedDifficulty);
+    loadRandomPassage(selectedDifficulty);
+  };
+
+  const loadRandomPassage = async (diff) => {
+    setIsGenerating(true);
+    resetSession();
+
+    try {
+      // Try to generate passage using Claude API
+      console.log(`Generating ${diff} passage with Claude AI...`);
+      const generatedPassage = await generatePassage(diff);
+      setCurrentPassage(generatedPassage);
+      console.log('✅ Successfully generated passage with Claude AI');
+    } catch (error) {
+      console.error('Failed to generate passage with Claude AI:', error);
+      console.log('Falling back to local passages...');
+
+      // Fallback to local JSON passages
+      const passages = passagesData[diff];
+      if (passages && passages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * passages.length);
+        setCurrentPassage(passages[randomIndex]);
+        console.log('✅ Loaded passage from local database');
+      } else {
+        Alert.alert(
+          'Error',
+          'Failed to load passage. Please try again.'
+        );
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const requestAudioPermission = async () => {
     try {
@@ -155,6 +193,8 @@ const ChallengeModeScreen = ({ onBack, user }) => {
   };
 
   const compareTexts = async (transcript, timeInSeconds) => {
+    if (!currentPassage) return;
+
     // Normalize texts
     const normalizeText = (text) =>
       text.toLowerCase()
@@ -162,14 +202,14 @@ const ChallengeModeScreen = ({ onBack, user }) => {
         .split(/\s+/)
         .filter(word => word.length > 0);
 
-    const challengeWords = normalizeText(CHALLENGE_TEXT);
+    const challengeWords = normalizeText(currentPassage.text);
     const transcriptWords = normalizeText(transcript);
 
     // Create word states with comparison
     const states = challengeWords.map((word, index) => {
       const wasSpoken = transcriptWords.includes(word);
       return {
-        word: CHALLENGE_TEXT.split(/\s+/)[index],
+        word: currentPassage.text.split(/\s+/)[index],
         isCorrect: wasSpoken,
         index,
       };
@@ -197,16 +237,16 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     setHasFinished(true);
 
     // Assess passage difficulty with Claude
-    let difficulty = 5; // Default medium difficulty
+    let passageDifficulty = 5; // Default medium difficulty
     try {
-      difficulty = await assessPassageDifficulty(CHALLENGE_TEXT);
-      console.log('Passage difficulty assessed:', difficulty);
+      passageDifficulty = await assessPassageDifficulty(currentPassage.text);
+      console.log('Passage difficulty assessed:', passageDifficulty);
     } catch (error) {
       console.error('Failed to assess difficulty:', error);
     }
 
     // Calculate challenge score
-    const earnedScore = calculateChallengeScore(difficulty, wordsPerMinute, percentage);
+    const earnedScore = calculateChallengeScore(passageDifficulty, wordsPerMinute, percentage);
     setChallengeScore(earnedScore);
 
     // Update user's challenge score and rank in Firebase
@@ -269,6 +309,10 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     }
   };
 
+  const tryNewPassage = () => {
+    loadRandomPassage(difficulty);
+  };
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -291,14 +335,88 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     );
   };
 
+  // Difficulty Selection Screen
+  if (!difficulty) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top - 70, spacing.sm) }]}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>select difficulty</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.difficultyContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.difficultyPrompt}>⚔️ test your skills:</Text>
+
+          <TouchableOpacity
+            style={[styles.difficultyCard, styles.easyCard]}
+            onPress={() => selectDifficulty('easy')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.difficultyIconCircle, { backgroundColor: colors.quaternary }]}>
+              <Text style={styles.difficultyEmoji}>🌱</Text>
+            </View>
+            <Text style={styles.difficultyTitle}>easy</Text>
+            <Text style={styles.difficultyDescription}>
+              short passages with simple words{'\n'}
+              ~25-35 words • ~10 seconds
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.difficultyCard, styles.mediumCard]}
+            onPress={() => selectDifficulty('medium')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.difficultyIconCircle, { backgroundColor: colors.secondary }]}>
+              <Text style={styles.difficultyEmoji}>🔥</Text>
+            </View>
+            <Text style={styles.difficultyTitle}>medium</Text>
+            <Text style={styles.difficultyDescription}>
+              moderate length with varied vocabulary{'\n'}
+              ~50-70 words • ~20 seconds
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.difficultyCard, styles.hardCard]}
+            onPress={() => selectDifficulty('hard')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.difficultyIconCircle, { backgroundColor: colors.accent }]}>
+              <Text style={styles.difficultyEmoji}>💎</Text>
+            </View>
+            <Text style={styles.difficultyTitle}>hard</Text>
+            <Text style={styles.difficultyDescription}>
+              complex passages with advanced vocabulary{'\n'}
+              ~80-100 words • ~30 seconds
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Main Challenge Screen
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top - 70, spacing.sm) }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>challenge mode</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>challenge mode</Text>
+          <Text style={styles.headerSubtitle}>
+            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+          </Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
@@ -332,7 +450,7 @@ const ChallengeModeScreen = ({ onBack, user }) => {
           showsVerticalScrollIndicator={false}
         >
           {/* Instructions - Only show when not recording and not finished */}
-          {!isRecording && !hasFinished && (
+          {!isRecording && !hasFinished && !isGenerating && (
             <View style={styles.instructionCard}>
               <Text style={styles.instructionTitle}>⚡ challenge rules</Text>
               <Text style={styles.instructionText}>
@@ -341,25 +459,34 @@ const ChallengeModeScreen = ({ onBack, user }) => {
             </View>
           )}
 
-          {/* Text Display */}
-          <View style={styles.textCard}>
-            <Text style={styles.textTitle}>
-              {hasFinished ? 'your performance:' : 'read this passage:'}
-            </Text>
-            <ScrollView 
-              style={styles.textScrollView}
-              nestedScrollEnabled={true}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.textContent}>
-                {wordStates.length > 0 ? (
-                  wordStates.map((wordState, index) => renderWord(wordState, index))
-                ) : (
-                  <Text style={styles.word}>{CHALLENGE_TEXT}</Text>
-                )}
-              </View>
-            </ScrollView>
-          </View>
+          {/* Generating Passage */}
+          {isGenerating ? (
+            <View style={styles.generatingCard}>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={styles.generatingText}>
+                ✨ generating your unique challenge passage...
+              </Text>
+            </View>
+          ) : currentPassage && (
+            <View style={styles.textCard}>
+              <Text style={styles.textTitle}>
+                {hasFinished ? 'your performance:' : 'read this passage:'}
+              </Text>
+              <ScrollView
+                style={styles.textScrollView}
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.textContent}>
+                  {wordStates.length > 0 ? (
+                    wordStates.map((wordState, index) => renderWord(wordState, index))
+                  ) : (
+                    <Text style={styles.word}>{currentPassage.text}</Text>
+                  )}
+                </View>
+              </ScrollView>
+            </View>
+          )}
 
           {/* Transcribed Text - Only show if there's content and not finished */}
           {transcribedText.length > 0 && !hasFinished && (
@@ -460,12 +587,23 @@ const ChallengeModeScreen = ({ onBack, user }) => {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity
-                style={styles.tryAgainButton}
-                onPress={resetSession}
-              >
-                <Text style={styles.tryAgainText}>try again</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.tryAgainButton]}
+                  onPress={tryNewPassage}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.actionButtonText}>new passage</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.changeDifficultyButton]}
+                  onPress={() => setDifficulty(null)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.actionButtonText}>change difficulty</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </ScrollView>
@@ -532,8 +670,76 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     textTransform: 'lowercase',
   },
+  headerCenter: {
+    alignItems: 'center',
+  },
+  headerSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.mutedForeground,
+    marginTop: 2,
+    textTransform: 'lowercase',
+  },
   placeholder: {
     width: 40,
+  },
+  difficultyContainer: {
+    padding: spacing.xl,
+    alignItems: 'stretch',
+  },
+  difficultyPrompt: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    textTransform: 'lowercase',
+  },
+  difficultyCard: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.card,
+  },
+  easyCard: {
+    borderColor: colors.quaternary,
+  },
+  mediumCard: {
+    borderColor: colors.secondary,
+  },
+  hardCard: {
+    borderColor: colors.accent,
+  },
+  difficultyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
+  },
+  difficultyEmoji: {
+    fontSize: 48,
+  },
+  difficultyTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+    textTransform: 'lowercase',
+  },
+  difficultyDescription: {
+    fontSize: fontSize.md,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    lineHeight: 22,
+    textTransform: 'lowercase',
   },
   metricsBar: {
     flexDirection: 'row',
@@ -579,6 +785,24 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.secondary,
     ...shadows.card,
+  },
+  generatingCard: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xxl,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.accent,
+    ...shadows.card,
+  },
+  generatingText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.foreground,
+    marginTop: spacing.lg,
+    textAlign: 'center',
+    textTransform: 'lowercase',
   },
   instructionTitle: {
     fontSize: fontSize.md,
@@ -787,16 +1011,27 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
     textTransform: 'lowercase',
   },
-  tryAgainButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xl,
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+  },
+  actionButton: {
+    flex: 1,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.full,
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.foreground,
     ...shadows.hard,
   },
-  tryAgainText: {
+  tryAgainButton: {
+    backgroundColor: colors.accent,
+  },
+  changeDifficultyButton: {
+    backgroundColor: colors.secondary,
+  },
+  actionButtonText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
     color: colors.accentForeground,
