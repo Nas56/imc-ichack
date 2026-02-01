@@ -12,6 +12,7 @@ import { db } from '../../../firebaseConfig';
 import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 import { Button, Card, ProgressBar } from '../../components';
 import { getLevelInfo, getLevelMessage } from '../../services/levelingService';
+import { getRankInfo } from '../../services/challengeRankingService';
 import LearnModeScreen from '../learn/LearnModeScreen';
 import ChallengeModeScreen from '../challenge/ChallengeModeScreen';
 import BrowseBooksScreen from '../books/BrowseBooksScreen';
@@ -25,6 +26,8 @@ export const HomeScreen = ({ user, onLogout }) => {
     level: 1,
     awards: [],
     currentBook: null,
+    challengeScore: 0,
+    challengeRank: 0,
   });
 
   useEffect(() => {
@@ -38,6 +41,8 @@ export const HomeScreen = ({ user, onLogout }) => {
             level: data.level || 1,
             awards: data.awards || [],
             currentBook: data.currentBook || null,
+            challengeScore: data.challengeScore || 0,
+            challengeRank: data.challengeRank || 0,
           });
         }
       });
@@ -48,6 +53,7 @@ export const HomeScreen = ({ user, onLogout }) => {
 
   const levelInfo = getLevelInfo(userData.xp);
   const levelMessage = getLevelMessage(levelInfo.level);
+  const rankInfo = getRankInfo(userData.challengeScore);
 
   if (currentScreen === 'learn') {
     return (
@@ -104,7 +110,7 @@ export const HomeScreen = ({ user, onLogout }) => {
             <View style={styles.floatingIcon}>
               <Text style={styles.iconEmoji}>⭐</Text>
             </View>
-            
+
             <View style={styles.tierHeader}>
               <View style={styles.tierInfo}>
                 <Text style={styles.tierLabel}>your level</Text>
@@ -128,6 +134,35 @@ export const HomeScreen = ({ user, onLogout }) => {
             <Text style={styles.nextTierText}>
               {levelInfo.xpToNextLevel} xp to level {levelInfo.level + 1}
             </Text>
+
+            {/* Challenge Rank Display */}
+            {levelInfo.level >= 2 && (
+              <View style={styles.rankSection}>
+                <View style={styles.rankDivider} />
+                <View style={styles.rankHeader}>
+                  <Text style={styles.tierLabel}>challenge rank</Text>
+                  <View style={styles.rankBadge}>
+                    <Text style={styles.rankBadgeEmoji}>{rankInfo.rankInfo.emoji}</Text>
+                    <Text style={styles.rankBadgeName}>{rankInfo.rankInfo.name}</Text>
+                  </View>
+                </View>
+                {!rankInfo.isMaxRank && (
+                  <>
+                    <ProgressBar
+                      progress={rankInfo.progressPercent}
+                      height={12}
+                      color={rankInfo.rankInfo.color}
+                    />
+                    <Text style={styles.nextRankText}>
+                      {rankInfo.scoreToNextRank} points to {rankInfo.nextRankInfo.name}
+                    </Text>
+                  </>
+                )}
+                {rankInfo.isMaxRank && (
+                  <Text style={styles.maxRankText}>maximum rank achieved! 🎉</Text>
+                )}
+              </View>
+            )}
           </Card>
         </View>
 
@@ -466,6 +501,57 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textAlign: 'center',
     textTransform: 'lowercase',
+  },
+  rankSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+  },
+  rankDivider: {
+    height: 2,
+    backgroundColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  rankHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  rankBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.muted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    gap: spacing.xs,
+    ...shadows.hard,
+  },
+  rankBadgeEmoji: {
+    fontSize: 18,
+  },
+  rankBadgeName: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
+  },
+  nextRankText: {
+    fontSize: fontSize.xs,
+    color: colors.mutedForeground,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    textTransform: 'lowercase',
+  },
+  maxRankText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: colors.accent,
+    textAlign: 'center',
+    textTransform: 'lowercase',
+    marginTop: spacing.xs,
   },
 
   // Continue Reading Card

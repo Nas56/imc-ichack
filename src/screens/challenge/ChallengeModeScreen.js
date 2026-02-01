@@ -12,14 +12,17 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { transcribeAudio } from '../../services/deepgramService';
-import { generateChallengeModeFeedback } from '../../services/claudeService';
+import { generateChallengeModeFeedback, assessPassageDifficulty } from '../../services/claudeService';
 import { speakWords, stopAllAudio } from '../../services/elevenLabsService';
+import { calculateChallengeScore, getRankInfo, addChallengeScore } from '../../services/challengeRankingService';
+import { ref, update } from 'firebase/database';
+import { db } from '../../../firebaseConfig';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
 
 // Challenge text - slightly longer and more complex
 const CHALLENGE_TEXT = "The ancient library stood tall against the evening sky, its weathered stone walls holding countless stories within. Scholars from distant lands traveled for months to access its vast collection of manuscripts and scrolls. Each book was a treasure, carefully preserved by generations of dedicated librarians who understood the immense value of knowledge.";
 
-const ChallengeModeScreen = ({ onBack }) => {
+const ChallengeModeScreen = ({ onBack, user }) => {
   const insets = useSafeAreaInsets();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -32,6 +35,9 @@ const ChallengeModeScreen = ({ onBack }) => {
   const [aiFeedback, setAiFeedback] = useState('');
   const [incorrectWords, setIncorrectWords] = useState([]);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [challengeScore, setChallengeScore] = useState(null);
+  const [rankInfo, setRankInfo] = useState(null);
+  const [rankedUp, setRankedUp] = useState(false);
 
   const recordingRef = useRef(null);
   const audioPermissionRef = useRef(false);
@@ -190,6 +196,48 @@ const ChallengeModeScreen = ({ onBack }) => {
     setWpm(wordsPerMinute);
     setHasFinished(true);
 
+    // Assess passage difficulty with Claude
+    let difficulty = 5; // Default medium difficulty
+    try {
+      difficulty = await assessPassageDifficulty(CHALLENGE_TEXT);
+      console.log('Passage difficulty assessed:', difficulty);
+    } catch (error) {
+      console.error('Failed to assess difficulty:', error);
+    }
+
+    // Calculate challenge score
+    const earnedScore = calculateChallengeScore(difficulty, wordsPerMinute, percentage);
+    setChallengeScore(earnedScore);
+
+    // Update user's challenge score and rank in Firebase
+    if (user) {
+      try {
+        const userRef = ref(db, 'users/' + user.uid);
+
+        // Get current challenge score from Firebase
+        const { onValue } = require('firebase/database');
+        onValue(userRef, (snapshot) => {
+          const userData = snapshot.val();
+          const currentScore = userData?.challengeScore || 0;
+
+          // Calculate new score and check for rank up
+          const scoreUpdate = addChallengeScore(currentScore, earnedScore);
+          const newRankInfo = getRankInfo(scoreUpdate.newTotalScore);
+
+          setRankInfo(newRankInfo);
+          setRankedUp(scoreUpdate.rankedUp);
+
+          // Update Firebase with new score and rank
+          update(userRef, {
+            challengeScore: scoreUpdate.newTotalScore,
+            challengeRank: newRankInfo.rank,
+          });
+        }, { onlyOnce: true });
+      } catch (error) {
+        console.error('Failed to update challenge score:', error);
+      }
+    }
+
     // Generate AI feedback
     try {
       const feedback = await generateChallengeModeFeedback(percentage, wordsPerMinute, incorrect);
@@ -212,6 +260,9 @@ const ChallengeModeScreen = ({ onBack }) => {
     setAiFeedback('');
     setIncorrectWords([]);
     setIsPlayingAudio(false);
+    setChallengeScore(null);
+    setRankInfo(null);
+    setRankedUp(false);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -343,6 +394,23 @@ const ChallengeModeScreen = ({ onBack }) => {
                   </Text>
                 </View>
               </View>
+
+              {/* Challenge Score & Rank */}
+              {challengeScore !== null && (
+                <View style={styles.scoreCard}>
+                  <Text style={styles.scoreTitle}>challenge score</Text>
+                  <Text style={styles.scoreValueLarge}>+{challengeScore}</Text>
+                  {rankInfo && (
+                    <View style={styles.rankDisplay}>
+                      <Text style={styles.rankEmoji}>{rankInfo.rankInfo.emoji}</Text>
+                      <Text style={styles.rankName}>{rankInfo.rankInfo.name}</Text>
+                      {rankedUp && (
+                        <Text style={styles.rankUpBadge}>⬆️ RANK UP!</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
 
               <Text style={styles.performanceLabel}>
                 {score >= 90 && wpm >= 100
@@ -733,6 +801,54 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.accentForeground,
     textTransform: 'lowercase',
+  },
+  scoreCard: {
+    backgroundColor: colors.muted,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginVertical: spacing.md,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.accent,
+    width: '100%',
+  },
+  scoreTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
+    marginBottom: spacing.xs,
+  },
+  scoreValueLarge: {
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.extraBold,
+    color: colors.accent,
+    marginBottom: spacing.sm,
+  },
+  rankDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  rankEmoji: {
+    fontSize: 24,
+  },
+  rankName: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    textTransform: 'lowercase',
+  },
+  rankUpBadge: {
+    backgroundColor: colors.secondary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extraBold,
+    color: colors.foreground,
+    marginLeft: spacing.xs,
   },
 });
 
