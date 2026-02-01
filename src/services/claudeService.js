@@ -18,13 +18,13 @@ export const generateLearnModeFeedback = async (accuracy, incorrectWords) => {
       : 'none';
 
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20250514',
+      model: 'claude-haiku-4-5',
       max_tokens: 150,
       messages: [{
         role: 'user',
         content: `You are a supportive reading tutor for children. A student just completed a reading exercise with ${accuracy}% accuracy. They had trouble with these words: ${incorrectWordsList}.
 
-Provide exactly 2 lines of encouraging, actionable feedback to help them improve. Keep it friendly, age-appropriate, and specific. Focus on what they can practice.`
+Provide exactly 2 simple sentences of encouraging feedback to help them improve. Use plain text only, no formatting, no asterisks, no special characters. Keep it friendly and specific.`
       }]
     });
 
@@ -54,13 +54,13 @@ export const generateChallengeModeFeedback = async (accuracy, wpm, incorrectWord
       : 'none';
 
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20250514',
+      model: 'claude-haiku-4-5',
       max_tokens: 150,
       messages: [{
         role: 'user',
         content: `You are a supportive reading coach for children. A student completed a timed reading challenge with ${accuracy}% accuracy and ${wpm} words per minute. They struggled with: ${incorrectWordsList}.
 
-Provide exactly 2 lines of encouraging, actionable feedback focusing on BOTH speed and accuracy. Be specific about what to practice.`
+Provide exactly 2 simple sentences of encouraging feedback about their speed and accuracy. Use plain text only, no formatting, no asterisks, no special characters. Be friendly and specific.`
       }]
     });
 

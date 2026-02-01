@@ -5,6 +5,10 @@ const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 // Using the default voice "Rachel" - a clear, friendly voice
 const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
 
+// Track currently playing sounds to allow stopping
+let currentSounds = [];
+let shouldStop = false;
+
 /**
  * Convert text to speech using ElevenLabs API and play it
  * @param {string} text - The text to convert to speech
@@ -68,13 +72,25 @@ export const speakText = async (text) => {
             { shouldPlay: true }
           );
 
+          // Track this sound
+          currentSounds.push(sound);
+
           // Clean up after playback
           sound.setOnPlaybackStatusUpdate((status) => {
             if (status.didJustFinish) {
+              currentSounds = currentSounds.filter(s => s !== sound);
               sound.unloadAsync();
               resolve();
             }
           });
+
+          // Check if we should stop
+          if (shouldStop) {
+            sound.stopAsync();
+            currentSounds = currentSounds.filter(s => s !== sound);
+            sound.unloadAsync();
+            reject(new Error('Audio stopped'));
+          }
         } catch (error) {
           console.error('Audio playback error:', error);
           reject(error);
@@ -101,14 +117,37 @@ export const speakWords = async (words) => {
   try {
     if (words.length === 0) return;
 
+    shouldStop = false;
+
     // Speak words one by one with pauses
     for (const word of words) {
+      if (shouldStop) break;
       await speakText(word);
       // Small pause between words
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!shouldStop) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
   } catch (error) {
     console.error('Error speaking words:', error);
     throw error;
+  }
+};
+
+/**
+ * Stop all currently playing audio
+ */
+export const stopAllAudio = async () => {
+  shouldStop = true;
+  const sounds = [...currentSounds];
+  currentSounds = [];
+
+  for (const sound of sounds) {
+    try {
+      await sound.stopAsync();
+      await sound.unloadAsync();
+    } catch (error) {
+      console.error('Error stopping sound:', error);
+    }
   }
 };

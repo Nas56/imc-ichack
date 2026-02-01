@@ -17,7 +17,7 @@ import { transcribeAudio } from '../../services/deepgramService';
 import { calculateXP, addXP, getLevelInfo } from '../../services/levelingService';
 import { generatePassage } from '../../services/passageGenerationService';
 import { generateLearnModeFeedback } from '../../services/claudeService';
-import { speakWords } from '../../services/elevenLabsService';
+import { speakWords, stopAllAudio } from '../../services/elevenLabsService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
 import passagesData from '../../data/passages.json';
 
@@ -47,6 +47,8 @@ const LearnModeScreen = ({ onBack, user }) => {
       if (recordingRef.current) {
         stopRecording();
       }
+      // Stop any playing audio
+      stopAllAudio();
     };
   }, []);
 

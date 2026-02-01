@@ -13,7 +13,7 @@ import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { transcribeAudio } from '../../services/deepgramService';
 import { generateChallengeModeFeedback } from '../../services/claudeService';
-import { speakWords } from '../../services/elevenLabsService';
+import { speakWords, stopAllAudio } from '../../services/elevenLabsService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
 
 // Challenge text - slightly longer and more complex
@@ -47,6 +47,8 @@ const ChallengeModeScreen = ({ onBack }) => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      // Stop any playing audio
+      stopAllAudio();
     };
   }, []);
 
