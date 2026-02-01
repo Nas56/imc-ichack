@@ -562,29 +562,48 @@ const ChallengeModeScreen = ({ onBack, user }) => {
 
               {/* Pronunciation Help */}
               {incorrectWords.length > 0 && (
-                <TouchableOpacity
-                  style={styles.pronunciationButton}
-                  onPress={async () => {
-                    setIsPlayingAudio(true);
-                    try {
-                      await speakWords(incorrectWords);
-                    } catch (error) {
-                      Alert.alert('error', 'failed to play pronunciation audio');
-                    }
-                    setIsPlayingAudio(false);
-                  }}
-                  disabled={isPlayingAudio}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={isPlayingAudio ? "volume-high" : "volume-medium"}
-                    size={20}
-                    color="#fff"
-                  />
-                  <Text style={styles.pronunciationButtonText}>
-                    {isPlayingAudio ? 'playing...' : 'hear missed words'}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.audioButtonRow}>
+                  <TouchableOpacity
+                    style={[styles.pronunciationButton, { flex: 1 }]}
+                    onPress={async () => {
+                      setIsPlayingAudio(true);
+                      try {
+                        await speakWords(incorrectWords);
+                      } catch (error) {
+                        Alert.alert('error', 'failed to play pronunciation audio');
+                      }
+                      setIsPlayingAudio(false);
+                    }}
+                    disabled={isPlayingAudio}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={isPlayingAudio ? "volume-high" : "volume-medium"}
+                      size={20}
+                      color="#fff"
+                    />
+                    <Text style={styles.pronunciationButtonText}>
+                      {isPlayingAudio ? 'playing...' : 'hear missed words'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {isPlayingAudio && (
+                    <TouchableOpacity
+                      style={styles.stopButton}
+                      onPress={async () => {
+                        await stopAllAudio();
+                        setIsPlayingAudio(false);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name="stop-circle"
+                        size={24}
+                        color="#fff"
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
 
               <View style={styles.buttonRow}>
@@ -598,7 +617,11 @@ const ChallengeModeScreen = ({ onBack, user }) => {
 
                 <TouchableOpacity
                   style={[styles.actionButton, styles.changeDifficultyButton]}
-                  onPress={() => setDifficulty(null)}
+                  onPress={async () => {
+                    await stopAllAudio();
+                    setIsPlayingAudio(false);
+                    setDifficulty(null);
+                  }}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.actionButtonText}>change difficulty</Text>
@@ -993,6 +1016,12 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
     lineHeight: 22,
   },
+  audioButtonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    width: '100%',
+  },
   pronunciationButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1001,8 +1030,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.md,
-    marginBottom: spacing.md,
-    width: '100%',
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   pronunciationButtonText: {
     fontSize: fontSize.md,
@@ -1010,6 +1040,17 @@ const styles = StyleSheet.create({
     color: colors.secondaryForeground,
     marginLeft: spacing.sm,
     textTransform: 'lowercase',
+  },
+  stopButton: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.error,
+    borderRadius: borderRadius.md,
+    borderWidth: 2,
+    borderColor: colors.foreground,
+    ...shadows.hard,
   },
   buttonRow: {
     flexDirection: 'row',
