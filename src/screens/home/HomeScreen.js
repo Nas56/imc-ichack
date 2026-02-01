@@ -14,11 +14,12 @@ import { Button, Card, ProgressBar } from '../../components';
 import { getLevelInfo, getLevelMessage } from '../../services/levelingService';
 import LearnModeScreen from '../learn/LearnModeScreen';
 import ChallengeModeScreen from '../challenge/ChallengeModeScreen';
+import BrowseBooksScreen from '../books/BrowseBooksScreen';
 
 const { width } = Dimensions.get('window');
 
 export const HomeScreen = ({ user, onLogout }) => {
-  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'learn', or 'challenge'
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'learn', 'challenge', or 'books'
   const [userData, setUserData] = useState({
     xp: 0,
     level: 1,
@@ -59,6 +60,13 @@ export const HomeScreen = ({ user, onLogout }) => {
     console.log('Rendering ChallengeModeScreen');
     return (
       <ChallengeModeScreen onBack={() => setCurrentScreen('home')} user={user} />
+    );
+  }
+
+  // Show Browse Books screen if selected
+  if (currentScreen === 'books') {
+    return (
+      <BrowseBooksScreen onBack={() => setCurrentScreen('home')} />
     );
   }
 
@@ -171,7 +179,7 @@ export const HomeScreen = ({ user, onLogout }) => {
               </View>
               <TouchableOpacity
                 style={styles.pillButton}
-                onPress={() => {}}
+                onPress={() => setCurrentScreen('books')}
                 activeOpacity={0.8}
               >
                 <Text style={styles.pillButtonText}>continue reading</Text>
@@ -187,7 +195,7 @@ export const HomeScreen = ({ user, onLogout }) => {
               </Text>
               <TouchableOpacity
                 style={[styles.pillButton, styles.pillButtonPrimary]}
-                onPress={() => {}}
+                onPress={() => setCurrentScreen('books')}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.pillButtonText, styles.pillButtonTextPrimary]}>browse books</Text>

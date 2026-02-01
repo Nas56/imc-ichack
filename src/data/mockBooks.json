@@ -4,32 +4,34 @@
     "title": "The Magical Garden",
     "coverUrl": "📗",
     "difficulty": "easy",
+    "difficultyColor": "#22c55e",
     "genreEmoji": "🌸",
     "description": "A young girl discovers a secret garden where flowers can talk and grant wishes.",
-    "chapters": [
+    "pages": [
       {
-        "id": "chapter-1-1",
-        "bookId": "book-1",
-        "chapterNumber": 1,
+        "pageNumber": 1,
         "title": "The Hidden Gate",
-        "textContent": "Lily walked through her grandmother's old garden. Behind the roses, she saw something special. A small wooden gate was hidden by leaves. The gate was painted blue and had tiny flowers carved into it. Lily pushed it open slowly. What would she find inside?",
-        "estimatedMinutes": 2
+        "content": "Lily walked through her grandmother's old garden. Behind the roses, she saw something special. A small wooden gate was hidden by leaves.\n\nThe gate was painted blue and had tiny flowers carved into it. Lily pushed it open slowly. What would she find inside?"
       },
       {
-        "id": "chapter-1-2",
-        "bookId": "book-1",
-        "chapterNumber": 2,
+        "pageNumber": 2,
         "title": "Talking Flowers",
-        "textContent": "Inside the garden, Lily heard soft voices. She looked around but saw no one. Then a daisy spoke! 'Hello, Lily,' it said with a smile. 'We've been waiting for you.' Lily couldn't believe her ears. The flowers could talk! A rose giggled and a sunflower waved.",
-        "estimatedMinutes": 2
+        "content": "Inside the garden, Lily heard soft voices. She looked around but saw no one. Then a daisy spoke!\n\n'Hello, Lily,' it said with a smile. 'We've been waiting for you.' Lily couldn't believe her ears. The flowers could talk!"
       },
       {
-        "id": "chapter-1-3",
-        "bookId": "book-1",
-        "chapterNumber": 3,
+        "pageNumber": 3,
+        "title": "The Wise Oak",
+        "content": "A big oak tree stood in the middle of the garden. Its branches reached up to the sky.\n\n'Welcome, child,' said the tree in a deep voice. 'This garden has been waiting for someone special like you.'"
+      },
+      {
+        "pageNumber": 4,
         "title": "The First Wish",
-        "textContent": "The wise old oak tree told Lily about the garden's magic. 'Each person gets three wishes,' the tree explained. 'But choose carefully. True wishes come from the heart.' Lily thought for a long time. What did she really want? She closed her eyes and made her first wish.",
-        "estimatedMinutes": 3
+        "content": "The wise old oak tree told Lily about the garden's magic. 'Each person gets three wishes,' the tree explained.\n\n'But choose carefully. True wishes come from the heart.' Lily thought for a long time about what she really wanted."
+      },
+      {
+        "pageNumber": 5,
+        "title": "A Special Gift",
+        "content": "Lily made her wish. Suddenly, a beautiful butterfly appeared. It had rainbow wings that sparkled in the sunlight.\n\n'Your wish was kind,' said the oak tree. 'Now this butterfly will be your friend forever.' Lily smiled. She had made the right choice."
       }
     ]
   },
@@ -38,60 +40,80 @@
     "title": "Space Explorers",
     "coverUrl": "🚀",
     "difficulty": "medium",
+    "difficultyColor": "#f97316",
     "genreEmoji": "🌌",
     "description": "Join Captain Maya and her crew as they journey through the galaxy on a mission to discover new worlds.",
-    "chapters": [
+    "pages": [
       {
-        "id": "chapter-2-1",
-        "bookId": "book-2",
-        "chapterNumber": 1,
+        "pageNumber": 1,
         "title": "Liftoff!",
-        "textContent": "Captain Maya checked all the systems one last time. 'Is everyone ready?' she asked her crew. The engines began to rumble. The countdown started: ten, nine, eight. The whole ship shook with power. Seven, six, five. Maya's heart beat faster. Four, three, two, one. Liftoff! The spacecraft rose into the sky, leaving Earth behind.",
-        "estimatedMinutes": 3
+        "content": "Captain Maya checked all the systems one last time. 'Is everyone ready?' she asked her crew. The engines began to rumble loudly.\n\nThe countdown started: ten, nine, eight. The whole ship shook with incredible power. Seven, six, five. Maya's heart beat faster with anticipation. Four, three, two, one. Liftoff!"
       },
       {
-        "id": "chapter-2-2",
-        "bookId": "book-2",
-        "chapterNumber": 2,
+        "pageNumber": 2,
+        "title": "Beyond the Stars",
+        "content": "Through the viewport, Earth became smaller and smaller. The crew watched in amazement as they left their home planet behind.\n\n'Look at those constellations,' whispered Tom, pointing at the brilliant stars. The vastness of space surrounded them in every direction."
+      },
+      {
+        "pageNumber": 3,
         "title": "Strange Signals",
-        "textContent": "Three days into the journey, the ship's computer detected something unusual. Beep. Beep. Beep. A signal was coming from a nearby asteroid. 'It sounds like a message,' said Tom, the communications officer. The crew gathered around the screen. The signal repeated in a pattern. Was someone trying to communicate with them?",
-        "estimatedMinutes": 3
+        "content": "Three days into the journey, the ship's computer detected something unusual. Beep. Beep. Beep. A mysterious signal was coming from a nearby asteroid.\n\n'It sounds like a message,' said Tom, the communications officer. The crew gathered around the screen, curious and slightly nervous."
+      },
+      {
+        "pageNumber": 4,
+        "title": "The Discovery",
+        "content": "As they approached the asteroid, they saw something extraordinary. Ancient structures covered its surface, glowing with a soft blue light.\n\n'This is incredible,' Maya said. 'These buildings are thousands of years old. Someone lived here once.' The crew prepared to investigate further."
+      },
+      {
+        "pageNumber": 5,
+        "title": "First Contact",
+        "content": "Inside the largest structure, they found a chamber filled with holographic displays. Suddenly, a figure appeared before them.\n\n'Greetings, travelers,' the hologram said. 'We have been waiting for someone to find us.' Maya and her crew stood frozen in wonder."
+      },
+      {
+        "pageNumber": 6,
+        "title": "A New Beginning",
+        "content": "The hologram explained that they were the guardians of ancient knowledge. They had been waiting for the right explorers to pass it on.\n\n'Your journey is just beginning,' the figure said warmly. Maya smiled at her crew. This was the discovery of a lifetime."
       }
     ]
   },
   {
     "id": "book-3",
-    "title": "Mystery at Moonlight Manor",
-    "coverUrl": "🏰",
-    "difficulty": "medium",
-    "genreEmoji": "🔍",
-    "description": "When strange things start happening at the old manor, detective Alex must solve the mystery before it's too late.",
-    "chapters": [
-      {
-        "id": "chapter-3-1",
-        "bookId": "book-3",
-        "chapterNumber": 1,
-        "title": "The Strange Invitation",
-        "textContent": "Alex found an envelope on the doorstep. It was made of thick, creamy paper with a red wax seal. The invitation inside was handwritten in elegant script. 'You are invited to Moonlight Manor for a weekend mystery event. Come if you dare to solve the unsolvable.' It was signed with just the letter M.",
-        "estimatedMinutes": 3
-      }
-    ]
-  },
-  {
-    "id": "book-4",
     "title": "The Dragon's Secret",
     "coverUrl": "🐉",
     "difficulty": "hard",
+    "difficultyColor": "#ef4444",
     "genreEmoji": "⚔️",
     "description": "In a kingdom where dragons are feared, one brave knight discovers that not all dragons are what they seem.",
-    "chapters": [
+    "pages": [
       {
-        "id": "chapter-4-1",
-        "bookId": "book-4",
-        "chapterNumber": 1,
-        "title": "The Mountain Cave",
-        "textContent": "Sir Edmund climbed the treacherous mountain path, his armor gleaming in the afternoon sun. The villagers had spoken of a fearsome dragon dwelling in the highest caves. For years, smoke had risen from the mountain peak, and livestock had mysteriously disappeared. As the kingdom's bravest knight, Edmund had volunteered to face the beast. But as he approached the cave entrance, he heard something unexpected: the sound of gentle weeping.",
-        "estimatedMinutes": 4
+        "pageNumber": 1,
+        "title": "The Mountain Path",
+        "content": "Sir Edmund climbed the treacherous mountain path, his polished armor gleaming brilliantly in the afternoon sun. The villagers had spoken fearfully of a formidable dragon dwelling in the highest caves.\n\nFor years, ominous smoke had risen from the mountain peak, and valuable livestock had mysteriously disappeared without a trace. As the kingdom's most courageous and skilled knight, Edmund had voluntarily accepted this dangerous mission."
+      },
+      {
+        "pageNumber": 2,
+        "title": "Unexpected Sounds",
+        "content": "As he cautiously approached the cave entrance, sword drawn and ready, Edmund heard something completely unexpected: the unmistakable sound of gentle weeping echoing from within.\n\nHis training had prepared him for roaring flames and fierce battles, but not for this. He hesitated, uncertainty washing over him. Dragons weren't supposed to cry, were they?"
+      },
+      {
+        "pageNumber": 3,
+        "title": "The Revelation",
+        "content": "Inside the shadowy cave, Edmund discovered a magnificent dragon curled protectively around several shimmering eggs. Tears streamed down her scaled face as she gazed at them tenderly.\n\n'Please,' she said in a surprisingly soft voice, 'don't hurt my children. I've been hiding here because humans fear what they don't understand.' Edmund slowly lowered his weapon, his perspective shifting dramatically."
+      },
+      {
+        "pageNumber": 4,
+        "title": "The Truth Unveiled",
+        "content": "The dragon explained her heartbreaking story. She had never attacked the village intentionally. The missing livestock were sick animals she had mercifully taken to prevent disease from spreading.\n\n'I've been protecting your people,' she said sadly. 'But they only see a monster.' Edmund felt ashamed. The kingdom had been wrong about her all along."
+      },
+      {
+        "pageNumber": 5,
+        "title": "A New Alliance",
+        "content": "Sir Edmund made a courageous decision that would change everything. Instead of slaying the dragon, he would become her advocate and protector.\n\n'I will tell the kingdom the truth,' he declared firmly. 'You've been a guardian, not a threat. Together, we can build understanding between our peoples.'"
+      },
+      {
+        "pageNumber": 6,
+        "title": "Peace at Last",
+        "content": "Edmund returned to the kingdom with an extraordinary tale. Initially skeptical, the villagers eventually accepted the truth about their misunderstood neighbor.\n\nThe dragon became the kingdom's protector, and her children grew up in a world where dragons and humans lived harmoniously together. Edmund had discovered that true bravery sometimes means challenging old fears and prejudices."
       }
     ]
   }

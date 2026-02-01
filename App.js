@@ -7,6 +7,7 @@ import { colors } from './src/theme';
 import AuthScreen from './src/screens/auth/AuthScreen';
 import OnboardingFlow from './src/screens/onboarding/OnboardingFlow';
 import HomeScreen from './src/screens/home/HomeScreen';
+import { initializeFirebaseData } from './src/utils/initializeFirebase';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -15,6 +16,9 @@ export default function App() {
   const [onboardingData, setOnboardingData] = useState(null);
 
   useEffect(() => {
+    // Initialize Firebase data (books, etc.) on first run
+    initializeFirebaseData();
+
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
