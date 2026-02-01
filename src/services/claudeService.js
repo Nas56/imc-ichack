@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { ANTHROPIC_API_KEY } from '../../config';
+import { CLAUDE_API_KEY } from '../../config';
 
 /**
  * Generate AI feedback for Learn Mode performance
@@ -10,7 +10,7 @@ import { ANTHROPIC_API_KEY } from '../../config';
 export const generateLearnModeFeedback = async (accuracy, incorrectWords) => {
   try {
     const anthropic = new Anthropic({
-      apiKey: ANTHROPIC_API_KEY,
+      apiKey: CLAUDE_API_KEY,
     });
 
     const incorrectWordsList = incorrectWords.length > 0
@@ -18,7 +18,7 @@ export const generateLearnModeFeedback = async (accuracy, incorrectWords) => {
       : 'none';
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-haiku-4-5-20250514',
       max_tokens: 150,
       messages: [{
         role: 'user',
@@ -46,7 +46,7 @@ Provide exactly 2 lines of encouraging, actionable feedback to help them improve
 export const generateChallengeModeFeedback = async (accuracy, wpm, incorrectWords) => {
   try {
     const anthropic = new Anthropic({
-      apiKey: ANTHROPIC_API_KEY,
+      apiKey: CLAUDE_API_KEY,
     });
 
     const incorrectWordsList = incorrectWords.length > 0
@@ -54,7 +54,7 @@ export const generateChallengeModeFeedback = async (accuracy, wpm, incorrectWord
       : 'none';
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-haiku-4-5-20250514',
       max_tokens: 150,
       messages: [{
         role: 'user',
