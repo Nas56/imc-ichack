@@ -8,6 +8,8 @@ const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
 // Track currently playing sounds to allow stopping
 let currentSounds = [];
 let shouldStop = false;
+let currentSound = null;
+let isPaused = false;
 
 /**
  * Convert text to speech using ElevenLabs API and play it
@@ -17,6 +19,9 @@ let shouldStop = false;
 export const speakText = async (text) => {
   try {
     console.log('Generating speech for:', text);
+
+    // Reset shouldStop flag for new playback
+    shouldStop = false;
 
     // Call ElevenLabs API
     const response = await fetch(
@@ -74,11 +79,16 @@ export const speakText = async (text) => {
 
           // Track this sound
           currentSounds.push(sound);
+          currentSound = sound;
 
           // Clean up after playback
           sound.setOnPlaybackStatusUpdate((status) => {
             if (status.didJustFinish) {
               currentSounds = currentSounds.filter(s => s !== sound);
+              if (currentSound === sound) {
+                currentSound = null;
+                isPaused = false;
+              }
               sound.unloadAsync();
               resolve();
             }
@@ -139,8 +149,10 @@ export const speakWords = async (words) => {
  */
 export const stopAllAudio = async () => {
   shouldStop = true;
+  isPaused = false;
   const sounds = [...currentSounds];
   currentSounds = [];
+  currentSound = null;
 
   for (const sound of sounds) {
     try {
@@ -150,4 +162,46 @@ export const stopAllAudio = async () => {
       console.error('Error stopping sound:', error);
     }
   }
+};
+
+/**
+ * Pause currently playing audio
+ */
+export const pauseAudio = async () => {
+  if (currentSound) {
+    try {
+      await currentSound.pauseAsync();
+      isPaused = true;
+    } catch (error) {
+      console.error('Error pausing audio:', error);
+    }
+  }
+};
+
+/**
+ * Resume paused audio
+ */
+export const resumeAudio = async () => {
+  if (currentSound && isPaused) {
+    try {
+      await currentSound.playAsync();
+      isPaused = false;
+    } catch (error) {
+      console.error('Error resuming audio:', error);
+    }
+  }
+};
+
+/**
+ * Check if audio is currently playing
+ */
+export const isAudioPlaying = () => {
+  return currentSound !== null && !isPaused;
+};
+
+/**
+ * Check if audio is paused
+ */
+export const isAudioPaused = () => {
+  return isPaused;
 };

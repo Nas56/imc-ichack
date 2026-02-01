@@ -13,7 +13,7 @@ import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { transcribeAudio } from '../../services/deepgramService';
 import { generateChallengeModeFeedback, assessPassageDifficulty } from '../../services/claudeService';
-import { speakWords, stopAllAudio } from '../../services/elevenLabsService';
+import { speakWords, speakText, stopAllAudio, pauseAudio, resumeAudio, isAudioPlaying, isAudioPaused } from '../../services/elevenLabsService';
 import { calculateChallengeScore, getRankInfo, addChallengeScore } from '../../services/challengeRankingService';
 import { generatePassage } from '../../services/passageGenerationService';
 import { ref, update } from 'firebase/database';
@@ -36,7 +36,9 @@ const ChallengeModeScreen = ({ onBack, user }) => {
   const [hasFinished, setHasFinished] = useState(false);
   const [aiFeedback, setAiFeedback] = useState('');
   const [incorrectWords, setIncorrectWords] = useState([]);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [playingWordIndex, setPlayingWordIndex] = useState(null);
+  const [isPlayingFeedback, setIsPlayingFeedback] = useState(false);
+  const [isPausedFeedback, setIsPausedFeedback] = useState(false);
   const [challengeScore, setChallengeScore] = useState(null);
   const [rankInfo, setRankInfo] = useState(null);
   const [rankedUp, setRankedUp] = useState(false);
@@ -56,10 +58,59 @@ const ChallengeModeScreen = ({ onBack, user }) => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      // Stop any playing audio
+      // Stop any playing audio when leaving the screen
       stopAllAudio();
     };
   }, []);
+
+  const handleWordClick = async (word, index) => {
+    // If already playing this word, stop it
+    if (playingWordIndex === index) {
+      await stopAllAudio();
+      setPlayingWordIndex(null);
+      return;
+    }
+
+    // Stop any other playing audio first
+    if (playingWordIndex !== null) {
+      await stopAllAudio();
+    }
+
+    setPlayingWordIndex(index);
+    try {
+      await speakText(word);
+      setPlayingWordIndex(null);
+    } catch (error) {
+      console.error('Error playing word:', error);
+      setPlayingWordIndex(null);
+    }
+  };
+
+  const handleFeedbackPlayback = async () => {
+    if (isPlayingFeedback && !isPausedFeedback) {
+      // Pause if currently playing
+      await pauseAudio();
+      setIsPausedFeedback(true);
+    } else if (isPausedFeedback) {
+      // Resume if paused
+      await resumeAudio();
+      setIsPausedFeedback(false);
+    } else {
+      // Start new playback
+      setIsPlayingFeedback(true);
+      setIsPausedFeedback(false);
+      try {
+        await speakText(aiFeedback);
+        setIsPlayingFeedback(false);
+        setIsPausedFeedback(false);
+      } catch (error) {
+        console.error('Error playing feedback:', error);
+        setIsPlayingFeedback(false);
+        setIsPausedFeedback(false);
+        Alert.alert('Error', 'Failed to play feedback audio');
+      }
+    }
+  };
 
   const selectDifficulty = (selectedDifficulty) => {
     setDifficulty(selectedDifficulty);
@@ -289,6 +340,9 @@ const ChallengeModeScreen = ({ onBack, user }) => {
   };
 
   const resetSession = () => {
+    // Stop any playing audio
+    stopAllAudio();
+
     setTranscribedText('');
     setWordStates([]);
     setScore(null);
@@ -299,7 +353,9 @@ const ChallengeModeScreen = ({ onBack, user }) => {
     setIsProcessing(false);
     setAiFeedback('');
     setIncorrectWords([]);
-    setIsPlayingAudio(false);
+    setPlayingWordIndex(null);
+    setIsPlayingFeedback(false);
+    setIsPausedFeedback(false);
     setChallengeScore(null);
     setRankInfo(null);
     setRankedUp(false);
@@ -321,13 +377,37 @@ const ChallengeModeScreen = ({ onBack, user }) => {
 
   const renderWord = (wordState, index) => {
     const { word, isCorrect } = wordState;
+    const isClickable = hasFinished && !isCorrect;
+    const isPlaying = playingWordIndex === index;
+
+    if (isClickable) {
+      return (
+        <TouchableOpacity
+          key={index}
+          onPress={() => handleWordClick(word, index)}
+          activeOpacity={0.7}
+          style={styles.wordButton}
+        >
+          <Text
+            style={[
+              styles.word,
+              styles.incorrectWord,
+              isPlaying && styles.playingWord,
+            ]}
+          >
+            {word}{' '}
+            {isPlaying && <Ionicons name="volume-high" size={12} color={colors.foreground} />}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
 
     return (
       <Text
         key={index}
         style={[
           styles.word,
-          hasFinished && (isCorrect ? styles.correctWord : styles.incorrectWord),
+          hasFinished && isCorrect && styles.correctWord,
         ]}
       >
         {word}{' '}
@@ -555,54 +635,33 @@ const ChallengeModeScreen = ({ onBack, user }) => {
                   <View style={styles.feedbackHeader}>
                     <Ionicons name="bulb" size={20} color={colors.secondary} />
                     <Text style={styles.feedbackTitle}>ai coach says:</Text>
+                    <TouchableOpacity
+                      onPress={handleFeedbackPlayback}
+                      style={styles.feedbackAudioButton}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name={
+                          isPlayingFeedback && !isPausedFeedback
+                            ? "pause-circle"
+                            : "play-circle"
+                        }
+                        size={24}
+                        color={colors.secondary}
+                      />
+                    </TouchableOpacity>
                   </View>
                   <Text style={styles.feedbackText}>{aiFeedback}</Text>
                 </View>
               )}
 
-              {/* Pronunciation Help */}
+              {/* Hint for clickable words */}
               {incorrectWords.length > 0 && (
-                <View style={styles.audioButtonRow}>
-                  <TouchableOpacity
-                    style={[styles.pronunciationButton, { flex: 1 }]}
-                    onPress={async () => {
-                      setIsPlayingAudio(true);
-                      try {
-                        await speakWords(incorrectWords);
-                      } catch (error) {
-                        Alert.alert('error', 'failed to play pronunciation audio');
-                      }
-                      setIsPlayingAudio(false);
-                    }}
-                    disabled={isPlayingAudio}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name={isPlayingAudio ? "volume-high" : "volume-medium"}
-                      size={20}
-                      color="#fff"
-                    />
-                    <Text style={styles.pronunciationButtonText}>
-                      {isPlayingAudio ? 'playing...' : 'hear missed words'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {isPlayingAudio && (
-                    <TouchableOpacity
-                      style={styles.stopButton}
-                      onPress={async () => {
-                        await stopAllAudio();
-                        setIsPlayingAudio(false);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons
-                        name="stop-circle"
-                        size={24}
-                        color="#fff"
-                      />
-                    </TouchableOpacity>
-                  )}
+                <View style={styles.hintContainer}>
+                  <Ionicons name="information-circle" size={16} color={colors.mutedForeground} />
+                  <Text style={styles.hintText}>
+                    tap on red words to hear pronunciation
+                  </Text>
                 </View>
               )}
 
@@ -617,11 +676,7 @@ const ChallengeModeScreen = ({ onBack, user }) => {
 
                 <TouchableOpacity
                   style={[styles.actionButton, styles.changeDifficultyButton]}
-                  onPress={async () => {
-                    await stopAllAudio();
-                    setIsPlayingAudio(false);
-                    setDifficulty(null);
-                  }}
+                  onPress={() => setDifficulty(null)}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.actionButtonText}>change difficulty</Text>
@@ -885,6 +940,28 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     fontWeight: fontWeight.bold,
   },
+  wordButton: {
+    display: 'inline-flex',
+  },
+  playingWord: {
+    backgroundColor: colors.accent,
+  },
+  hintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.muted,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  hintText: {
+    fontSize: fontSize.sm,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
+  },
   microphoneContainer: {
     position: 'absolute',
     bottom: spacing.lg,
@@ -1008,49 +1085,17 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.foreground,
     marginLeft: spacing.xs,
+    flex: 1,
     textTransform: 'lowercase',
+  },
+  feedbackAudioButton: {
+    padding: spacing.xs,
   },
   feedbackText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.regular,
     color: colors.mutedForeground,
     lineHeight: 22,
-  },
-  audioButtonRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    width: '100%',
-  },
-  pronunciationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
-    borderColor: colors.foreground,
-    ...shadows.hard,
-  },
-  pronunciationButtonText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    color: colors.secondaryForeground,
-    marginLeft: spacing.sm,
-    textTransform: 'lowercase',
-  },
-  stopButton: {
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.error,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
-    borderColor: colors.foreground,
-    ...shadows.hard,
   },
   buttonRow: {
     flexDirection: 'row',

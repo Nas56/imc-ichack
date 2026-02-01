@@ -18,7 +18,7 @@ import { transcribeAudio } from '../../services/deepgramService';
 import { calculateXP, addXP, getLevelInfo } from '../../services/levelingService';
 import { generatePassage } from '../../services/passageGenerationService';
 import { generateLearnModeFeedback } from '../../services/claudeService';
-import { speakWords, stopAllAudio } from '../../services/elevenLabsService';
+import { speakWords, speakText, stopAllAudio, pauseAudio, resumeAudio, isAudioPlaying, isAudioPaused } from '../../services/elevenLabsService';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
 import passagesData from '../../data/passages.json';
 
@@ -38,7 +38,9 @@ const LearnModeScreen = ({ onBack, user }) => {
   const [levelUpInfo, setLevelUpInfo] = useState(null);
   const [aiFeedback, setAiFeedback] = useState('');
   const [incorrectWords, setIncorrectWords] = useState([]);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [playingWordIndex, setPlayingWordIndex] = useState(null);
+  const [isPlayingFeedback, setIsPlayingFeedback] = useState(false);
+  const [isPausedFeedback, setIsPausedFeedback] = useState(false);
 
   const recordingRef = useRef(null);
   const audioPermissionRef = useRef(false);
@@ -49,10 +51,56 @@ const LearnModeScreen = ({ onBack, user }) => {
       if (recordingRef.current) {
         stopRecording();
       }
-      // Stop any playing audio
+      // Stop any playing audio when leaving the screen
       stopAllAudio();
     };
   }, []);
+
+  const handleWordClick = async (word, index) => {
+    // If already playing this word, stop it
+    if (playingWordIndex === index) {
+      await stopAllAudio();
+      setPlayingWordIndex(null);
+      return;
+    }
+
+    // Stop any other playing audio first
+    if (playingWordIndex !== null) {
+      await stopAllAudio();
+    }
+
+    setPlayingWordIndex(index);
+    try {
+      await speakText(word);
+      setPlayingWordIndex(null);
+    } catch (error) {
+      console.error('Error playing word:', error);
+      setPlayingWordIndex(null);
+    }
+  };
+
+  const handleFeedbackPlayback = async () => {
+    if (isPlayingFeedback && !isPausedFeedback) {
+      await pauseAudio();
+      setIsPausedFeedback(true);
+    } else if (isPausedFeedback) {
+      await resumeAudio();
+      setIsPausedFeedback(false);
+    } else {
+      setIsPlayingFeedback(true);
+      setIsPausedFeedback(false);
+      try {
+        await speakText(aiFeedback);
+        setIsPlayingFeedback(false);
+        setIsPausedFeedback(false);
+      } catch (error) {
+        console.error('Error playing feedback:', error);
+        setIsPlayingFeedback(false);
+        setIsPausedFeedback(false);
+        Alert.alert('Error', 'Failed to play feedback audio');
+      }
+    }
+  };
 
   const requestAudioPermission = async () => {
     try {
@@ -245,6 +293,7 @@ const LearnModeScreen = ({ onBack, user }) => {
   };
 
   const resetSession = () => {
+    stopAllAudio();
     setTranscribedText('');
     setWordStates([]);
     setScore(null);
@@ -252,6 +301,9 @@ const LearnModeScreen = ({ onBack, user }) => {
     setHasFinished(false);
     setIsRecording(false);
     setIsProcessing(false);
+    setPlayingWordIndex(null);
+    setIsPlayingFeedback(false);
+    setIsPausedFeedback(false);
   };
 
   const tryNewPassage = () => {
@@ -260,13 +312,37 @@ const LearnModeScreen = ({ onBack, user }) => {
 
   const renderWord = (wordState, index) => {
     const { word, isCorrect } = wordState;
+    const isClickable = hasFinished && !isCorrect;
+    const isPlaying = playingWordIndex === index;
+
+    if (isClickable) {
+      return (
+        <TouchableOpacity
+          key={index}
+          onPress={() => handleWordClick(word, index)}
+          activeOpacity={0.7}
+          style={styles.wordButton}
+        >
+          <Text
+            style={[
+              styles.word,
+              styles.incorrectWord,
+              isPlaying && styles.playingWord,
+            ]}
+          >
+            {word}{' '}
+            {isPlaying && <Ionicons name="volume-high" size={12} color={colors.foreground} />}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
 
     return (
       <Text
         key={index}
         style={[
           styles.word,
-          hasFinished && (isCorrect ? styles.correctWord : styles.incorrectWord),
+          hasFinished && isCorrect && styles.correctWord,
         ]}
       >
         {word}{' '}
@@ -451,36 +527,34 @@ const LearnModeScreen = ({ onBack, user }) => {
                 <View style={styles.feedbackHeader}>
                   <Ionicons name="bulb" size={20} color={colors.secondary} />
                   <Text style={styles.feedbackTitle}>ai coach says:</Text>
+                  <TouchableOpacity
+                    onPress={handleFeedbackPlayback}
+                    style={styles.feedbackAudioButton}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={
+                        isPlayingFeedback && !isPausedFeedback
+                          ? "pause-circle"
+                          : "play-circle"
+                      }
+                      size={24}
+                      color={colors.secondary}
+                    />
+                  </TouchableOpacity>
                 </View>
                 <Text style={styles.feedbackText}>{aiFeedback}</Text>
               </View>
             )}
 
-            {/* Pronunciation Help */}
+            {/* Hint for clickable words */}
             {incorrectWords.length > 0 && (
-              <TouchableOpacity
-                style={styles.pronunciationButton}
-                onPress={async () => {
-                  setIsPlayingAudio(true);
-                  try {
-                    await speakWords(incorrectWords);
-                  } catch (error) {
-                    Alert.alert('error', 'failed to play pronunciation audio');
-                  }
-                  setIsPlayingAudio(false);
-                }}
-                disabled={isPlayingAudio}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isPlayingAudio ? "volume-high" : "volume-medium"}
-                  size={20}
-                  color="#fff"
-                />
-                <Text style={styles.pronunciationButtonText}>
-                  {isPlayingAudio ? 'playing...' : 'hear missed words'}
+              <View style={styles.hintContainer}>
+                <Ionicons name="information-circle" size={16} color={colors.mutedForeground} />
+                <Text style={styles.hintText}>
+                  tap on red words to hear pronunciation
                 </Text>
-              </TouchableOpacity>
+              </View>
             )}
 
             <View style={styles.buttonRow}>
@@ -717,6 +791,29 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     fontWeight: fontWeight.bold,
   },
+  wordButton: {
+    display: 'inline-flex',
+  },
+  playingWord: {
+    backgroundColor: colors.accent,
+  },
+  hintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.muted,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  hintText: {
+    fontSize: fontSize.sm,
+    color: colors.mutedForeground,
+    textTransform: 'lowercase',
+  },
   microphoneContainer: {
     alignItems: 'center',
     marginVertical: spacing.xl,
@@ -830,7 +927,11 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.foreground,
     marginLeft: spacing.xs,
+    flex: 1,
     textTransform: 'lowercase',
+  },
+  feedbackAudioButton: {
+    padding: spacing.xs,
   },
   feedbackText: {
     fontSize: fontSize.md,
