@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { ref, update, get } from 'firebase/database';
@@ -22,6 +23,7 @@ import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '..
 import passagesData from '../../data/passages.json';
 
 const LearnModeScreen = ({ onBack, user }) => {
+  const insets = useSafeAreaInsets();
   const [difficulty, setDifficulty] = useState(null);
   const [currentPassage, setCurrentPassage] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -275,8 +277,8 @@ const LearnModeScreen = ({ onBack, user }) => {
   // Difficulty Selection Screen
   if (!difficulty) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top - 70, spacing.sm) }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={24} color={colors.foreground} />
           </TouchableOpacity>
@@ -335,14 +337,14 @@ const LearnModeScreen = ({ onBack, user }) => {
             </Text>
           </TouchableOpacity>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Main Learning Screen
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top - 70, spacing.sm) }]}>
         <TouchableOpacity onPress={() => setDifficulty(null)} style={styles.backButton} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
@@ -528,7 +530,7 @@ const LearnModeScreen = ({ onBack, user }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -542,7 +544,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.md,
     paddingBottom: spacing.md,
     backgroundColor: colors.card,
     borderBottomWidth: 2,

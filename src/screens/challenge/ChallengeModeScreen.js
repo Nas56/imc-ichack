@@ -7,8 +7,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { transcribeAudio } from '../../services/deepgramService';
@@ -20,6 +20,7 @@ import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '..
 const CHALLENGE_TEXT = "The ancient library stood tall against the evening sky, its weathered stone walls holding countless stories within. Scholars from distant lands traveled for months to access its vast collection of manuscripts and scrolls. Each book was a treasure, carefully preserved by generations of dedicated librarians who understood the immense value of knowledge.";
 
 const ChallengeModeScreen = ({ onBack }) => {
+  const insets = useSafeAreaInsets();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
@@ -240,9 +241,9 @@ const ChallengeModeScreen = ({ onBack }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top - 70, spacing.sm) }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
@@ -448,7 +449,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.md,
     backgroundColor: colors.card,
     borderBottomWidth: 2,

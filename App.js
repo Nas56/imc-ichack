@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar, ActivityIndicator, View, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ref, onValue, set } from 'firebase/database';
 import { auth, db } from './firebaseConfig';
@@ -95,15 +96,17 @@ export default function App() {
   // Show loading screen while checking auth state
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaProvider>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   // Show appropriate screen based on state
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       {!user ? (
         <AuthScreen onAuthSuccess={handleAuthSuccess} />
@@ -112,7 +115,7 @@ export default function App() {
       ) : (
         <HomeScreen user={user} onLogout={handleLogout} />
       )}
-    </>
+    </SafeAreaProvider>
   );
 }
 
